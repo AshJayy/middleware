@@ -1,0 +1,6 @@
+.idea
+*.zsh
+*.ssh
+
+.venv
+

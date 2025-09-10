@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: swiftlogistics-rabbitmq
+    ports:
+      - "5672:5672"    # AMQP (used by services)
+      - "15672:15672"  # RabbitMQ Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - swiftlogistics-net
+
+  postgres:
+    image: postgres:15
+    container_name: swiftlogistics-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: swiftuser
+      POSTGRES_PASSWORD: swiftpass
+      POSTGRES_DB: swiftdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - swiftlogistics-net
+
+networks:
+  swiftlogistics-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
