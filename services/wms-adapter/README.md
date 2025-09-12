@@ -11,6 +11,10 @@ This service acts as an adapter between the Warehouse Management System (WMS) an
   ```
 
 ## How to Run
+Run the mock WMS server in a separate terminal:
+```bash
+python wms_server_mock.py
+```
 Run the main adapter service:
 ```bash
 python main.py
