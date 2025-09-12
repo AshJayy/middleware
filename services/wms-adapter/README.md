@@ -20,13 +20,29 @@ Run the main adapter service:
 python main.py
 ```
 
+### With docker
+
+Run the mock WMS server in the host machine:
+```bash
+python wms_server_mock.py
+```
+Build the Docker image:
+```bash
+docker build -t wms-adapter .
+```
+Run the Docker container:
+```bash
+docker run --name wms-adapter \
+ --env-file ../../.env \
+ -d -p 8003:8003 \
+ wms-adapter
+```
+
 ## Debug Mode
 To enable debug logging, set the environment variable before running:
-```bash
-export DEBUG=1
-python main.py
-```
-This will run the publisher as a standalone component, without waiting for other services.
+`WMS_DEBUG=1`
+
+- This will run the publisher as a standalone component, without waiting for other services.
 
 ## What Happens
 - The adapter connects to the WMS server (see `wms_server_mock.py` for local testing).
@@ -42,3 +58,7 @@ This will run the publisher as a standalone component, without waiting for other
 - `wms_server_mock.py`: Mock WMS server for local development
 - `test/`: Unit tests
 
+## Notes
+
+The WMS server is mocked for local development. 
+Docker listens to a mock WMS server running on the host machine at `http://host.docker.internal:9090` over TCP.
