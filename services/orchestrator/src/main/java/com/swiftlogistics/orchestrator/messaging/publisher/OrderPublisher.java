@@ -1,8 +1,8 @@
 package com.swiftlogistics.orchestrator.messaging.publisher;
 
 import com.swiftlogistics.orchestrator.config.RabbitMQConfig;
-import com.swiftlogistics.orchestrator.model.OrderMessage;
-import com.swiftlogistics.orchestrator.model.WarehouseRequestMessage;
+import com.swiftlogistics.orchestrator.dto.OrderMessage;
+import com.swiftlogistics.orchestrator.dto.WarehouseRequestMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;

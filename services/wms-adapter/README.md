@@ -51,12 +51,25 @@ To enable debug logging, set the environment variable before running:
 - The service logs key actions and errors.
 
 ## File Structure
-- `main.py`: Entry point for the service
-- `client.py`: Handles WMS server communication
-- `normalizer.py`: Data normalization logic
-- `publisher.py`: Event publishing
-- `wms_server_mock.py`: Mock WMS server for local development
-- `test/`: Unit tests
+```
+app/
+  main.py                # Entry point for the adapter service
+  requirements.txt       # Python dependencies
+  wms_server_mock.py     # Mock WMS server for local development
+  queue/
+    client.py            # Handles WMS server communication
+    consumer.py          # Message consumer logic
+    publisher.py         # Event publishing logic
+    rabbitmq_conn.py     # RabbitMQ connection setup
+  wms/
+    client.py            # WMS client logic
+    mssg_parser.py       # Message parsing logic
+  __init__.py            # Package initialization
+  test/
+    test_client.py       # Unit tests for WMS client
+```
+Dockerfile               # Container build file
+README.md                # Service documentation
 
 ## Notes
 

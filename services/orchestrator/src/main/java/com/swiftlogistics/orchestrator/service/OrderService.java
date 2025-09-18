@@ -1,8 +1,11 @@
 package com.swiftlogistics.orchestrator.service;
 
+import com.swiftlogistics.orchestrator.dto.CreateOrderRequest;
+import com.swiftlogistics.orchestrator.model.Customer;
 import com.swiftlogistics.orchestrator.model.Order;
-import com.swiftlogistics.orchestrator.model.OrderMessage;
-import com.swiftlogistics.orchestrator.model.WarehouseRequestMessage;
+import com.swiftlogistics.orchestrator.dto.OrderMessage;
+import com.swiftlogistics.orchestrator.dto.WarehouseRequestMessage;
+import com.swiftlogistics.orchestrator.repository.CustomerRepository;
 import com.swiftlogistics.orchestrator.repository.OrderRepository;
 import com.swiftlogistics.orchestrator.messaging.publisher.OrderPublisher;
 import com.swiftlogistics.orchestrator.messaging.publisher.WebSocketPublisher;
@@ -21,6 +24,7 @@ import java.util.UUID;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final CustomerRepository customerRepository;
     private final OrderPublisher orderPublisher;
     private final WebSocketPublisher webSocketPublisher;
     private final EventService eventService;
@@ -28,23 +32,19 @@ public class OrderService {
     /**
      * Step 1: Create a new order and publish to order-created queue
      */
-    public Order createOrder(String customerId, String customerName, String customerEmail,
-                           String deliveryAddress, String city, String postalCode, String country,
-                           Double totalAmount) {
+    public Order createOrder(CreateOrderRequest request) {
         try {
             // Generate correlation ID for tracking across systems
             String correlationId = UUID.randomUUID().toString();
             
             // Create order entity
             Order order = Order.builder()
-                    .customerId(customerId)
-                    .customerName(customerName)
-                    .customerEmail(customerEmail)
-                    .deliveryAddress(deliveryAddress)
-                    .city(city)
-                    .postalCode(postalCode)
-                    .country(country)
-                    .totalAmount(totalAmount)
+                    .customerId(request.getCustomerId())
+                    .deliveryAddress(request.getDeliveryAddress())
+                    .city(request.getCity())
+                    .postalCode(request.getPostalCode())
+                    .country(request.getCountry())
+                    .totalAmount(request.getTotalAmount())
                     .status(Order.OrderStatus.NEW)
                     .correlationId(correlationId)
                     .createdAt(LocalDateTime.now())
@@ -58,17 +58,21 @@ public class OrderService {
             eventService.logEvent(savedOrder.getOrderId(), correlationId, "ORDER_CREATED", 
                     "ORCHESTRATOR", "Order created successfully");
 
+            // Get customer details
+            Customer customer = customerRepository.findById(request.getCustomerId())
+                    .orElseThrow();
+
             // Create message for CMS Adapter (billing)
             OrderMessage orderMessage = OrderMessage.builder()
                     .orderId(savedOrder.getOrderId())
-                    .customerId(customerId)
-                    .customerName(customerName)
-                    .customerEmail(customerEmail)
-                    .address(deliveryAddress)
-                    .city(city)
-                    .postalCode(postalCode)
-                    .country(country)
-                    .totalAmount(totalAmount)
+                    .customerId(savedOrder.getCustomerId())
+                    .customerName(customer.getCustomerName())
+                    .customerEmail(customer.getCustomerEmail())
+                    .deliveryAddress(savedOrder.getDeliveryAddress())
+                    .city(savedOrder.getCity())
+                    .postalCode(savedOrder.getPostalCode())
+                    .country(savedOrder.getCountry())
+                    .totalAmount(savedOrder.getTotalAmount())
                     .correlationId(correlationId)
                     .timestamp(LocalDateTime.now())
                     .build();
@@ -89,7 +93,7 @@ public class OrderService {
             return savedOrder;
 
         } catch (Exception e) {
-            log.error("Failed to create order: customerId={}", customerId, e);
+            log.error("Failed to create order: customerId={}", request.getCustomerId(), e);
             throw new RuntimeException("Failed to create order", e);
         }
     }
@@ -166,7 +170,6 @@ public class OrderService {
                     .orderId(orderId)
                     .correlationId(order.getCorrelationId())
                     .customerId(order.getCustomerId())
-                    .customerName(order.getCustomerName())
                     .deliveryAddress(order.getDeliveryAddress())
                     .city(order.getCity())
                     .postalCode(order.getPostalCode())
@@ -209,9 +212,7 @@ public class OrderService {
             OrderMessage routeRequest = OrderMessage.builder()
                     .orderId(orderId)
                     .customerId(order.getCustomerId())
-                    .customerName(order.getCustomerName())
-                    .customerEmail(order.getCustomerEmail())
-                    .address(order.getDeliveryAddress())
+                    .deliveryAddress(order.getDeliveryAddress())
                     .city(order.getCity())
                     .postalCode(order.getPostalCode())
                     .country(order.getCountry())
@@ -248,18 +249,14 @@ public class OrderService {
             }
 
             Order order = orderOpt.get();
-            order.setWaypoints(waypoints);
-            order.setDriverId(driverId);
-            order.setDriverName(driverName);
-            order.setVehicleId(vehicleId);
             order.setStatus(Order.OrderStatus.ROUTED);
             order.setRoutedAt(LocalDateTime.now());
             order.setUpdatedAt(LocalDateTime.now());
 
             Order updatedOrder = orderRepository.save(order);
-            
+
             // Log event
-            eventService.logEvent(orderId, order.getCorrelationId(), "ROUTE_COMPLETED", 
+            eventService.logEvent(orderId, order.getCorrelationId(), "ROUTE_COMPLETED",
                     "ORCHESTRATOR", "Route planning completed and driver assigned");
 
             // Publish real-time update via WebSocket

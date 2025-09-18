@@ -1,4 +1,4 @@
-package com.swiftlogistics.orchestrator.model;
+package com.swiftlogistics.orchestrator.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @Builder
 public class RouteRequestMessage {
     private String orderId;
-    private String address; // delivery address
+    private String address;
 }

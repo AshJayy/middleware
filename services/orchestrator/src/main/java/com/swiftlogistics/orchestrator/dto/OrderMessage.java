@@ -1,4 +1,4 @@
-package com.swiftlogistics.orchestrator.model;
+package com.swiftlogistics.orchestrator.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,7 +16,7 @@ public class OrderMessage {
     private String customerId;
     private String customerName;
     private String customerEmail;
-    private String address;
+    private String deliveryAddress;
     private String city;
     private String postalCode;
     private String country;

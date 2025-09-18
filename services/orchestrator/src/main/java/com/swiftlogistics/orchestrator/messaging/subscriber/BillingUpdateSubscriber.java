@@ -1,7 +1,7 @@
 package com.swiftlogistics.orchestrator.messaging.subscriber;
 
 import com.swiftlogistics.orchestrator.config.RabbitMQConfig;
-import com.swiftlogistics.orchestrator.model.BillingUpdateMessage;
+import com.swiftlogistics.orchestrator.dto.BillingUpdateMessage;
 import com.swiftlogistics.orchestrator.service.OrderService;
 import com.swiftlogistics.orchestrator.service.EventService;
 import lombok.RequiredArgsConstructor;

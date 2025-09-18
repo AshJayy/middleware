@@ -1,7 +1,7 @@
 package com.swiftlogistics.orchestrator.messaging.subscriber;
 
 import com.swiftlogistics.orchestrator.config.RabbitMQConfig;
-import com.swiftlogistics.orchestrator.model.DeliveryUpdateMessage;
+import com.swiftlogistics.orchestrator.dto.DeliveryUpdateMessage;
 import com.swiftlogistics.orchestrator.service.OrderService;
 import com.swiftlogistics.orchestrator.service.EventService;
 import lombok.RequiredArgsConstructor;
@@ -104,8 +104,7 @@ public class DeliveryUpdateSubscriber {
             deliveryUpdate.getCorrelationId(),
             "ORDER_DELIVERED",
             "DELIVERY_SERVICE",
-            String.format("Order successfully delivered to: %s. Signature URL: %s", 
-                    deliveryUpdate.getDeliveredTo(), deliveryUpdate.getSignatureUrl())
+                null
         );
 
         log.info("Order {} delivery completed successfully", deliveryUpdate.getOrderId());
@@ -117,8 +116,7 @@ public class DeliveryUpdateSubscriber {
             deliveryUpdate.getCorrelationId(),
             "DELIVERY_IN_TRANSIT",
             "DELIVERY_SERVICE",
-            String.format("Package in transit at coordinates: %.6f, %.6f", 
-                    deliveryUpdate.getLatitude(), deliveryUpdate.getLongitude())
+                null
         );
     }
 
@@ -128,8 +126,7 @@ public class DeliveryUpdateSubscriber {
             deliveryUpdate.getCorrelationId(),
             "DELIVERY_ATTEMPTED",
             "DELIVERY_SERVICE",
-            String.format("Delivery attempted but failed: %s", 
-                    deliveryUpdate.getDeliveryNotes())
+                null
         );
     }
 
