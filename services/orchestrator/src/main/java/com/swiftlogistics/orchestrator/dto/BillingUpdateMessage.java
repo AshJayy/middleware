@@ -1,4 +1,4 @@
-package com.swiftlogistics.orchestrator.model;
+package com.swiftlogistics.orchestrator.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,14 +11,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class WarehouseUpdateMessage {
+public class BillingUpdateMessage {
     private String orderId;
     private String correlationId;
-    private String status; // "PACKAGE_READY", "FAILED", "PROCESSING"
-    private String packageId;
-    private String warehouseLocation;
+    private String status; // "BILLED", "FAILED", "PENDING"
+    private Double billedAmount;
+    private String billingTransactionId;
     private String errorMessage;
-    private LocalDateTime packageReadyAt;
     private LocalDateTime timestamp;
 }
-

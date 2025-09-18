@@ -1,7 +1,7 @@
 package com.swiftlogistics.orchestrator.messaging.publisher;
 
-import com.swiftlogistics.orchestrator.model.DriverUpdateMessage;
-import com.swiftlogistics.orchestrator.model.OrderStatusMessage;
+import com.swiftlogistics.orchestrator.dto.DriverUpdateMessage;
+import com.swiftlogistics.orchestrator.dto.OrderStatusMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;

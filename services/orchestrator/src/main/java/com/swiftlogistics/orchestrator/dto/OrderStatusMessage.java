@@ -1,4 +1,4 @@
-package com.swiftlogistics.orchestrator.model;
+package com.swiftlogistics.orchestrator.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

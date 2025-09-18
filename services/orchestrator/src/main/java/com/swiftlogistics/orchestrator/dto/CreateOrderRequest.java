@@ -1,17 +1,20 @@
-package com.swiftlogistics.orchestrator.model;
+package com.swiftlogistics.orchestrator.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
-@Getter
-@Setter
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CreateOrderRequest {
     private String customerId;
-    private String customerName;
-    private String customerEmail;
+
+    // Delivery Address
     private String deliveryAddress;
     private String city;
     private String postalCode;
     private String country;
+
+    // Billing Information
     private Double totalAmount;
 }

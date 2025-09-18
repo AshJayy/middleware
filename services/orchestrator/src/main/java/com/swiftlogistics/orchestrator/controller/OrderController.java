@@ -1,6 +1,6 @@
 package com.swiftlogistics.orchestrator.controller;
 
-import com.swiftlogistics.orchestrator.model.CreateOrderRequest;
+import com.swiftlogistics.orchestrator.dto.CreateOrderRequest;
 import com.swiftlogistics.orchestrator.model.Order;
 import com.swiftlogistics.orchestrator.model.Event;
 import com.swiftlogistics.orchestrator.service.OrderService;
@@ -36,16 +36,7 @@ public class OrderController {
         log.info("Creating new order for customer: {}", request.getCustomerId());
 
         try {
-            Order order = orderService.createOrder(
-                request.getCustomerId(),
-                request.getCustomerName(),
-                request.getCustomerEmail(),
-                request.getDeliveryAddress(),
-                request.getCity(),
-                request.getPostalCode(),
-                request.getCountry(),
-                request.getTotalAmount()
-            );
+            Order order = orderService.createOrder(request);
 
             log.info("Order created successfully: orderId={}, correlationId={}", 
                     order.getOrderId(), order.getCorrelationId());

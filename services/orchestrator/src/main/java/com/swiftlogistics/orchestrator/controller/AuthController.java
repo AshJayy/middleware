@@ -2,7 +2,7 @@ package com.swiftlogistics.orchestrator.controller;
 
 import com.swiftlogistics.orchestrator.model.Customer;
 import com.swiftlogistics.orchestrator.model.Driver;
-import com.swiftlogistics.orchestrator.model.LoginRequest;
+import com.swiftlogistics.orchestrator.dto.LoginRequest;
 import com.swiftlogistics.orchestrator.repository.CustomerRepository;
 import com.swiftlogistics.orchestrator.repository.DriverRepository;
 import lombok.RequiredArgsConstructor;
