@@ -38,8 +38,6 @@ public class OrderService {
             // Create order entity
             Order order = Order.builder()
                     .customerId(customerId)
-                    .customerName(customerName)
-                    .customerEmail(customerEmail)
                     .deliveryAddress(deliveryAddress)
                     .city(city)
                     .postalCode(postalCode)
@@ -166,7 +164,6 @@ public class OrderService {
                     .orderId(orderId)
                     .correlationId(order.getCorrelationId())
                     .customerId(order.getCustomerId())
-                    .customerName(order.getCustomerName())
                     .deliveryAddress(order.getDeliveryAddress())
                     .city(order.getCity())
                     .postalCode(order.getPostalCode())
@@ -209,8 +206,6 @@ public class OrderService {
             OrderMessage routeRequest = OrderMessage.builder()
                     .orderId(orderId)
                     .customerId(order.getCustomerId())
-                    .customerName(order.getCustomerName())
-                    .customerEmail(order.getCustomerEmail())
                     .address(order.getDeliveryAddress())
                     .city(order.getCity())
                     .postalCode(order.getPostalCode())
@@ -248,18 +243,14 @@ public class OrderService {
             }
 
             Order order = orderOpt.get();
-            order.setWaypoints(waypoints);
-            order.setDriverId(driverId);
-            order.setDriverName(driverName);
-            order.setVehicleId(vehicleId);
             order.setStatus(Order.OrderStatus.ROUTED);
             order.setRoutedAt(LocalDateTime.now());
             order.setUpdatedAt(LocalDateTime.now());
 
             Order updatedOrder = orderRepository.save(order);
-            
+
             // Log event
-            eventService.logEvent(orderId, order.getCorrelationId(), "ROUTE_COMPLETED", 
+            eventService.logEvent(orderId, order.getCorrelationId(), "ROUTE_COMPLETED",
                     "ORCHESTRATOR", "Route planning completed and driver assigned");
 
             // Publish real-time update via WebSocket

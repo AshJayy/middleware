@@ -11,8 +11,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
 
 @Data
 @Builder
@@ -24,12 +22,8 @@ public class Order {
     @Id
     private String orderId;
     
-    @Indexed
     private String customerId;
-    
-    private String customerName;
-    private String customerEmail;
-    
+
     // Delivery Address
     private String deliveryAddress;
     private String city;
@@ -56,12 +50,6 @@ public class Order {
     private Double totalAmount;
     private String billingStatus;
     
-    // Route Information
-    private List<String> waypoints;
-    private String driverId;
-    private String driverName;
-    private String vehicleId;
-    
     // Correlation ID for tracking across systems
     @Indexed
     private String correlationId;
@@ -69,6 +57,7 @@ public class Order {
     public enum OrderStatus {
         NEW,           // Order created
         BILLED,        // CMS billing completed
+        PACKAGING,     // WMS packaging in progress
         READY,         // WMS package ready
         ROUTED,        // ROS route planned
         ASSIGNED,      // Driver assigned
