@@ -5,6 +5,7 @@ import OrderDetails from './components/OrderDetails';
 import NotificationBell from './components/NotificationBell';
 import NotificationList from './components/NotificationList';
 import UserProfile from './components/UserProfile';
+import CreateOrderModal from './components/CreateOrderModal';
 import { Package, Clock, Truck, CheckCircle, AlertCircle } from 'lucide-react';
 
 const getStatusColor = (status) => {
@@ -73,6 +74,7 @@ const ClientPortal = () => {
     { id: 2, message: 'Order ORD-12347 has been delivered', time: '1 day ago', read: true }
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showCreateOrder, setShowCreateOrder] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -88,6 +90,22 @@ const ClientPortal = () => {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleCreateOrder = (orderData) => {
+    // Presaved data for pickupAddress, driverName, items, createdAt, status, estimatedDelivery
+    const newOrder = {
+      id: `ORD-${Math.floor(Math.random() * 100000)}`,
+      pickupAddress: 'Warehouse A, Colombo 01',
+      driverName: null,
+      items: ['General Package'],
+      createdAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      status: 'PENDING',
+      estimatedDelivery: orderData.estimatedDelivery || '',
+      ...orderData
+    };
+    setOrders([newOrder, ...orders]);
+    setShowCreateOrder(false);
+  };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -105,6 +123,9 @@ const ClientPortal = () => {
               <NotificationList notifications={notifications} onClose={() => setShowNotifications(false)} />
             )}
             <UserProfile user={user} />
+            <button className="create-order-btn" onClick={() => setShowCreateOrder(true)}>
+              + Create Order
+            </button>
           </div>
         </div>
       </header>
@@ -128,9 +149,22 @@ const ClientPortal = () => {
           />
         </div>
       </main>
+      {showCreateOrder && (
+        <CreateOrderModal
+          onClose={() => setShowCreateOrder(false)}
+          onCreate={handleCreateOrder}
+          presaved={{
+            pickupAddress: 'Warehouse A, Colombo 01',
+            driverName: null,
+            items: ['General Package'],
+            status: 'PENDING',
+            estimatedDelivery: '',
+            createdAt: new Date().toISOString().slice(0, 16).replace('T', ' ')
+          }}
+        />
+      )}
     </div>
   );
 };
 
 export default ClientPortal;
-
