@@ -7,7 +7,7 @@
             <xs:sequence>
                 <xs:element name="orderId" type="xs:string"/>
                 <xs:element name="clientId" type="xs:string"/>
-                <xs:element name="amount" type="xs:decimal"/>
+                <xs:element name="amount" type="xs:double"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -17,6 +17,8 @@
             <xs:sequence>
                 <xs:element name="status" type="xs:string"/>
                 <xs:element name="message" type="xs:string"/>
+                <xs:element name="orderId" type="xs:string"/>
+                <xs:element name="billedAmount" type="xs:double"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
