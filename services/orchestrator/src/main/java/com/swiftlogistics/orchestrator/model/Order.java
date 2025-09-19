@@ -1,5 +1,6 @@
 package com.swiftlogistics.orchestrator.model;
 
+import com.swiftlogistics.orchestrator.model.enums.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,8 +12,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
 
 @Data
 @Builder
@@ -24,12 +23,8 @@ public class Order {
     @Id
     private String orderId;
     
-    @Indexed
     private String customerId;
-    
-    private String customerName;
-    private String customerEmail;
-    
+
     // Delivery Address
     private String deliveryAddress;
     private String city;
@@ -46,35 +41,18 @@ public class Order {
     
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    private String driverId;
+
+    private String routeId;
     
     private LocalDateTime billedAt;
     private LocalDateTime packageReadyAt;
     private LocalDateTime routedAt;
+    private LocalDateTime pickedUpAt;
     private LocalDateTime deliveredAt;
     
     // Billing Information
     private Double totalAmount;
     private String billingStatus;
-    
-    // Route Information
-    private List<String> waypoints;
-    private String driverId;
-    private String driverName;
-    private String vehicleId;
-    
-    // Correlation ID for tracking across systems
-    @Indexed
-    private String correlationId;
-    
-    public enum OrderStatus {
-        NEW,           // Order created
-        BILLED,        // CMS billing completed
-        READY,         // WMS package ready
-        ROUTED,        // ROS route planned
-        ASSIGNED,      // Driver assigned
-        IN_TRANSIT,    // Package in transit
-        DELIVERED,     // Delivery completed
-        CANCELLED,     // Order cancelled
-        FAILED         // Order failed
-    }
 }
