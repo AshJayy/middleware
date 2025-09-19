@@ -12,14 +12,22 @@ export const orderEndpoints = {
   },
 
   async trackOrder(orderId) {
-    const url = `${NETWORK.baseURL}/orders/track/${orderId}`;
-    if (typeof(EventSource) !== "undefined") {
+    const url = `${NETWORK.baseURL}/sse/order/${orderId}`;
+    if (typeof (EventSource) !== "undefined") {
       const source = new EventSource(url);
-      source.onmessage = function(event) {
-        console.log("Order update:", event.data);
+      source.onmessage = function (event) {
+        const update = JSON.parse(event.data);
+        console.log('Order update received:', update);
         // Here you can dispatch an action or update state with the new order status
       };
-      source.onerror = function(err) {
+
+      source.addEventListener('order-update', function (event) {
+        const update = JSON.parse(event.data);
+        console.log('Order update event:', update);
+        // Handle specific order update event
+      });
+
+      source.onerror = function (err) {
         console.error("EventSource failed:", err);
         source.close();
       };
