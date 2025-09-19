@@ -16,13 +16,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class OrderService {
 
-    public Order saveOrder(String orderId, String clientId, BigDecimal amount) {
+    public Order saveOrder(String orderId, String clientId, Double amount) {
         // Mock CMS - immediately mark as completed
         LocalDateTime now = LocalDateTime.now();
         Order order = Order.builder()
                 .orderId(orderId)
                 .customerId(clientId)
-                .totalAmount(amount.doubleValue())
+                .totalAmount(amount)
                 .status(OrderStatus.BILLED)  // Mock: immediately completed billing
                 .billingStatus("COMPLETED")
                 .createdAt(now)

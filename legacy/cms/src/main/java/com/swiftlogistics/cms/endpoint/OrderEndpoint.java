@@ -33,10 +33,11 @@ public class OrderEndpoint {
 
         // Mock CMS - always return success/completed status
         SubmitOrderResponse response = new SubmitOrderResponse();
-        response.setStatus("SUCCESS");
+        response.setStatus("BILLED");
         response.setMessage("Order " + order.getOrderId() + " successfully processed and billed by CMS mock");
+        response.setOrderId(order.getOrderId());
+        response.setBilledAmount(order.getTotalAmount());
         log.info("Mock CMS - Returning SubmitOrderResponse: {}", response);
         return response;
     }
 }
-

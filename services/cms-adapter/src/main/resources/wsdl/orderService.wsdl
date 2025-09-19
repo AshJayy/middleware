@@ -3,8 +3,7 @@
                   xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
                   xmlns:tns="http://swiftlogistics.com/cms/orders"
                   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-                  targetNamespace="http://swiftlogistics.com/cms/orders"
-                  elementFormDefault="qualified">
+                  targetNamespace="http://swiftlogistics.com/cms/orders">
 
     <wsdl:types>
         <xsd:schema targetNamespace="http://swiftlogistics.com/cms/orders" elementFormDefault="qualified">
@@ -13,7 +12,7 @@
                     <xsd:sequence>
                         <xsd:element name="orderId" type="xsd:string"/>
                         <xsd:element name="clientId" type="xsd:string"/>
-                        <xsd:element name="amount" type="xsd:decimal"/>
+                        <xsd:element name="amount" type="xsd:double"/>
                     </xsd:sequence>
                 </xsd:complexType>
             </xsd:element>
@@ -24,7 +23,7 @@
                         <xsd:element name="status" type="xsd:string"/>
                         <xsd:element name="message" type="xsd:string"/>
                         <xsd:element name="orderId" type="xsd:string"/>
-                        <xsd:element name="billedAmount" type="xsd:decimal"/>
+                        <xsd:element name="billedAmount" type="xsd:double"/>
                     </xsd:sequence>
                 </xsd:complexType>
             </xsd:element>
@@ -65,5 +64,4 @@
             <soap:address location="http://localhost:8081/ws"/>
         </wsdl:port>
     </wsdl:service>
-
 </wsdl:definitions>
