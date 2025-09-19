@@ -14,9 +14,6 @@ public interface EventRepository extends MongoRepository<Event, String> {
     // Find events by order ID
     List<Event> findByOrderIdOrderByTimestampDesc(String orderId);
     
-    // Find events by correlation ID
-    List<Event> findByCorrelationIdOrderByTimestampDesc(String correlationId);
-    
     // Find failed events for monitoring
     @Query("{ 'status': 'FAILED' }")
     List<Event> findFailedEvents();

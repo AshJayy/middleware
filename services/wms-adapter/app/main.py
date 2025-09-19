@@ -5,8 +5,6 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 
 from wms.mssg_parser import parse_string_to_dict, parse_dict_to_string
-# from queue.publisher import publish_to_queue
-# from queue.consumer import consume_from_queue
 from queue.client import RabbitMQClient
 from wms.client import WMSClient
 

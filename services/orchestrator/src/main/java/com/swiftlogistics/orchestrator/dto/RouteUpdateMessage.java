@@ -1,4 +1,4 @@
-package com.swiftlogistics.orchestrator.model;
+package com.swiftlogistics.orchestrator.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,7 +14,6 @@ import java.util.List;
 @Builder
 public class RouteUpdateMessage {
     private String orderId;
-    private String correlationId;
     private String status; // "ROUTED", "FAILED", "OPTIMIZING"
     private List<String> waypoints;
     private String driverId;

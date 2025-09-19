@@ -1,18 +1,18 @@
-package com.swiftlogistics.orchestrator.model;
+package com.swiftlogistics.orchestrator.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class RouteMessage {
+public class WarehouseUpdateMessage {
     private String orderId;
-    private List<String> waypoints;
+    private String status;
 }
 
