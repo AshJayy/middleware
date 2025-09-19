@@ -8,7 +8,8 @@ import UserProfile from './components/UserProfile';
 import CreateOrderModal from './components/CreateOrderModal';
 import SignInModal from './components/SignInModal';
 import { useAuth } from './context/AuthContext';
-import { Package, Clock, Truck, CheckCircle, AlertCircle } from 'lucide-react';
+import { orderEndpoints } from './network/order';
+import { Package, Clock, Truck, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -40,61 +41,39 @@ const formatStatus = (status) => {
 
 const ClientPortal = () => {
   const { customer, isAuthenticated, getCustomerId } = useAuth();
-  const [orders, setOrders] = useState([
-    {
-      id: 'ORD-12345',
-      pickupAddress: 'Warehouse A, Colombo 01',
-      deliveryAddress: '123 Galle Road, Colombo 03',
-      status: 'IN_TRANSIT',
-      estimatedDelivery: '2024-11-15 14:30',
-      driverName: 'Kasun Perera',
-      items: ['Electronics Package', 'Documents'],
-      createdAt: '2024-11-15 09:00'
-    },
-    {
-      id: 'ORD-12346',
-      pickupAddress: 'Warehouse B, Kandy',
-      deliveryAddress: '456 Peradeniya Road, Kandy',
-      status: 'PENDING',
-      estimatedDelivery: '2024-11-16 10:00',
-      driverName: null,
-      items: ['Medical Supplies'],
-      createdAt: '2024-11-15 10:15'
-    },
-    {
-      id: 'ORD-12347',
-      pickupAddress: 'Warehouse A, Colombo 01',
-      deliveryAddress: '789 Negombo Road, Negombo',
-      status: 'DELIVERED',
-      estimatedDelivery: '2024-11-14 16:00',
-      driverName: 'Saman Silva',
-      items: ['Food Package', 'Beverages'],
-      createdAt: '2024-11-14 08:30'
-    }
-  ]);
+  const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [notifications] = useState([
     { id: 1, message: 'Order ORD-12345 is now in transit', time: '10 minutes ago', read: false },
     { id: 2, message: 'Order ORD-12347 has been delivered', time: '1 day ago', read: true }
-  ]);
+  ])
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCreateOrder, setShowCreateOrder] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
 
-  useEffect(() => {
+  const fetchOrders = async () => {
+    try {
+      const id = getCustomerId();
+      if (!id) return;
+      const res = await orderEndpoints.getOrders(id);
+      const list = Array.isArray(res) ? res : (res?.orders || []);
+      setOrders(list);
+    } catch (e) {
+      console.error('Failed to fetch orders', e);
+    }
+  };
 
-  }, []);
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchOrders();
+    }
+  }, [isAuthenticated]);
 
   const handleCreateOrder = (orderData) => {
     const newOrder = {
-      id: `ORD-${Math.floor(Math.random() * 100000)}`,
-      pickupAddress: 'Warehouse A, Colombo 01',
-      driverName: null,
-      items: ['General Package'],
-      createdAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      customerId: getCustomerId() || undefined,
       status: 'PENDING',
       estimatedDelivery: orderData.estimatedDelivery || '',
-      customerId: getCustomerId() || undefined,
       ...orderData
     };
     setOrders([newOrder, ...orders]);
@@ -117,7 +96,12 @@ const ClientPortal = () => {
               <NotificationList notifications={notifications} onClose={() => setShowNotifications(false)} />
             )}
             {isAuthenticated ? (
-              <UserProfile user={{ name: customer?.name || customer?.fullName || customer?.email || 'Customer' }} />
+              <>
+                <UserProfile user={{ name: customer?.name || customer?.fullName || customer?.email || 'Customer' }} />
+                <button className="create-order-btn" onClick={fetchOrders} title="Refresh orders">
+                  <RefreshCw size={16} style={{ marginRight: 8 }} /> Refresh
+                </button>
+              </>
             ) : (
               <button className="create-order-btn" onClick={() => setShowSignIn(true)}>Sign In</button>
             )}

@@ -1,6 +1,7 @@
 import React from 'react';
 import StatusBadge from './StatusBadge';
 import { MapPin, User, Clock, Package } from 'lucide-react';
+import { orderEndpoints } from "../network/order";
 
 const OrderDetails = ({ order, getStatusColor, getStatusIcon, formatStatus }) => {
   if (!order) return (
@@ -9,6 +10,10 @@ const OrderDetails = ({ order, getStatusColor, getStatusIcon, formatStatus }) =>
       <p>Select an order to view details</p>
     </div>
   );
+
+  const handleTrack = async () => {
+    orderEndpoints.trackOrder(order.id);
+  }
   return (
     <div className="order-details">
       <h2>Order Details</h2>
@@ -37,6 +42,7 @@ const OrderDetails = ({ order, getStatusColor, getStatusIcon, formatStatus }) =>
       <div className="order-detail-row">
         <span className="order-detail-label">Created:</span> {order.createdAt}
       </div>
+      <button className="create-order-btn" onClick={() => handleTrack(order.id)}>Track</button>
     </div>
   );
 };
