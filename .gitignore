@@ -3,4 +3,4 @@
 *.ssh
 
 .venv
-services/wms-adapter/.env
+services/wms-adapter/app/.env

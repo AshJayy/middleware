@@ -3,8 +3,8 @@ import socket, json, os
 
 class WMSClient:
     def __init__(self):
-        self.host = os.getenv("WMS_HOST", "localhost")
-        self.port = int(os.getenv("WMS_PORT", 9000))
+        self.host = os.getenv("WMS_TCP_HOST", "localhost")
+        self.port = int(os.getenv("WMS_TCP_PORT", 9000))
         self.sock = None
         self.connect()
 

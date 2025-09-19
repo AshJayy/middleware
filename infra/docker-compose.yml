@@ -1,35 +1,73 @@
-version: '3.8'
+version: "3.8"
 
 services:
+  # RabbitMQ Message Broker
   rabbitmq:
-    image: rabbitmq:3-management
-    container_name: swiftlogistics-rabbitmq
+    image: rabbitmq:3.12-management
+    container_name: swift-rabbitmq
+    restart: unless-stopped
     ports:
-      - "5672:5672"    # AMQP (used by services)
-      - "15672:15672"  # RabbitMQ Management UI
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    networks:
-      - swiftlogistics-net
-
-  postgres:
-    image: postgres:15
-    container_name: swiftlogistics-postgres
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_USER: swiftuser
-      POSTGRES_PASSWORD: swiftpass
-      POSTGRES_DB: swiftdb
+      - "5672:5672" # AMQP port
+      - "15672:15672" # Management UI port
+    env_file:
+      - ../services/orchestrator/.env
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - rabbitmq_data:/var/lib/rabbitmq
     networks:
-      - swiftlogistics-net
+      - swift-network
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
-networks:
-  swiftlogistics-net:
-    driver: bridge
+  # Swift Logistics Orchestrator
+  orchestrator:
+    build:
+      context: ../services/orchestrator
+      dockerfile: Dockerfile
+    container_name: swift-orchestrator
+    restart: unless-stopped
+    ports:
+      - "8000:8000" # Application port
+    env_file:
+      - ../services/orchestrator/.env
+    environment:
+      # Spring Boot Configuration
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swift-network
+    volumes:
+      - orchestrator_logs:/app/logs
 
+  # WMS adapter service
+  wms-adapter:
+    build:
+      context: ../services/wms-adapter
+      dockerfile: Dockerfile
+    container_name: swift-wms-adapter
+    restart: unless-stopped
+    ports:
+      - "8003:8003" # Application port
+    env_file:
+      - ../services/wms-adapter/app/.env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swift-network
+
+# Named volumes for data persistence
 volumes:
-  postgres_data:
+  rabbitmq_data:
+    driver: local
+  orchestrator_logs:
+    driver: local
+
+# Network for service communication
+networks:
+  swift-network:
+    driver: bridge
