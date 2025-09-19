@@ -52,4 +52,14 @@ public class AuthController {
     driver.setPassword(null);
     return ResponseEntity.ok(driver);
   }
+
+  @PostMapping("/sign-up")
+    public ResponseEntity<?> signUp(@RequestBody Customer customer) {
+        if (customerRepository.findCustomerByCustomerName(customer.getCustomerName()) != null) {
+        return ResponseEntity.status(400).body("Customer already exists");
+        }
+        Customer savedCustomer = customerRepository.save(customer);
+        savedCustomer.setPassword(null);
+        return ResponseEntity.ok(savedCustomer);
+    }
 }
