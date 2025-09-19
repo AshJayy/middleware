@@ -1,110 +1,45 @@
+// Simple Network client using fetch with baseURL and optional port
 class Network {
-
-  constructor(baseURL) {
+  constructor(baseURL, port) {
     this.baseURL = baseURL;
+    this.port = port;
   }
 
-  static handleRequest(method, endpoint, data, type = 'application/json') {
-    const request = new XMLHttpRequest();
-
-    console.log(`Sending ${method} request to ${endpoint}`);
-
-    return new Promise((resolve, reject) => {
-      // Validate method and URL
-      if (!['GET', 'POST', 'PUT', 'DELETE'].includes(method.toUpperCase())) {
-        return reject(new NetworkError(0, endpoint, null, 'Invalid HTTP method'));
-      }
-      if (!endpoint || typeof endpoint !== 'string') {
-        return reject(new NetworkError(0, endpoint, null, 'Invalid URL'));
-      }
-
-      console.log(`Sending ${method} request to ${endpoint}`);
-      request.open(method, this.baseURL + endpoint);
-      request.setRequestHeader('Content-Type', type);
-
-
-      request.onload = () => {
-        console.log(`Request to ${endpoint} completed with status: ${request.status}`);
-        if (request.status >= 400) {
-          reject(new NetworkError(request.status, endpoint, request.response));
-        } else {
-          try {
-            const response = request.response ? JSON.parse(request.response) : null;
-            resolve(response);
-          } catch (e) {
-            reject(new NetworkError(request.status, endpoint, null, 'Failed to parse JSON response'));
-          }
-        }
-      };
-
-      request.onerror = event => {
-        console.log('request request failed: ' + event.type);
-        reject(new NetworkError(request.status, endpoint, null, `request request failed: ${event.type}`));
-      };
-
-      if (type === 'application/json') {
-        request.send(JSON.stringify(data));
-      } else {
-        request.send(data);
-      }
-    });
+  buildUrl(endpoint) {
+    return `${this.baseURL}${endpoint}`;
   }
 
-  static async get(url: string, options: any = {}): Promise<any> {
-    return this.handleRequest('GET', url, {}, options);
-  }
-
-  static async post(endpoint, data) {
-    console.log("Post");
-    return this.handleRequest('GET', endpoint, {}, data);
-  }
-
-  async put(url: string, data: any, options: any = {}): Promise<any> {
-    return this.handleRequest('PUT', url, data, options);
-  }
-}
-
-/**
- * Class representing a network error.
- */
-class NetworkError {
-  constructor(statusCode, url, data, message) {
-    this.statusCode = statusCode;
-    this.url = url;
-    this.message = message;
-
-    if (data) {
-      try {
-        if (typeof data === 'string') {
-          data = JSON.parse(data);
-        }
-
-        this.errorDescription = data.error;
-        this.stackTrace = data.trace;
-        this.message = data.message;
-        this.code = data.code;
-        this.data = data.data;
-      } catch (e) {
-        this.stackTrace = e.stack;
-        this.errorDescription = 'Failed to extract data from network error: ' + e.message;
-      }
+  async request(method, endpoint, data, headers = {}) {
+    const url = this.buildUrl(endpoint);
+    const options = {
+      method: method.toUpperCase(),
+      headers: { 'Content-Type': 'application/json', ...headers },
+    };
+    if (data && method.toUpperCase() !== 'GET') {
+      options.body = typeof data === 'string' ? data : JSON.stringify(data);
     }
+    const res = await fetch(url, options);
+    const text = await res.text();
+    let json = null;
+    try { json = text ? JSON.parse(text) : null; } catch { /* non-JSON */ }
+    if (!res.ok) {
+      const err = new Error(json?.message || res.statusText);
+      err.status = res.status;
+      err.data = json || text;
+      throw err;
+    }
+    return json;
   }
 
-  /**
-   * Returns a string representation of the network error.
-   * @returns {string} A string describing the network error.
-   */
-  toString() {
-    return `Status Code: ${this.statusCode}\n
-        URL: ${this.url}\n
-        Description: ${this.errorDescription || 'No description'}\n
-        StackTrace: ${this.stackTrace || 'No stack trace'}\n
-        Message: ${this.message || 'No message'}`;
-  }
+  get(endpoint, headers) { return this.request('GET', endpoint, undefined, headers); }
+  post(endpoint, data, headers) { return this.request('POST', endpoint, data, headers); }
+  put(endpoint, data, headers) { return this.request('PUT', endpoint, data, headers); }
+  delete(endpoint, data, headers) { return this.request('DELETE', endpoint, data, headers); }
 }
 
-const NETWORK = new Network('localhost:8000/api/v1');
-NETWORK.get('/some-endpoint').then(data => console.log(data)).catch(err => console.error(err));
+const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api/v1';
+const PORT = undefined;
 
-export default Network;
+const NETWORK = new Network(BASE_URL, PORT);
+
+export default NETWORK;

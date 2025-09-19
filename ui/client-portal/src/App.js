@@ -6,6 +6,8 @@ import NotificationBell from './components/NotificationBell';
 import NotificationList from './components/NotificationList';
 import UserProfile from './components/UserProfile';
 import CreateOrderModal from './components/CreateOrderModal';
+import SignInModal from './components/SignInModal';
+import { useAuth } from './context/AuthContext';
 import { Package, Clock, Truck, CheckCircle, AlertCircle } from 'lucide-react';
 
 const getStatusColor = (status) => {
@@ -34,8 +36,10 @@ const formatStatus = (status) => {
   return status.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
 };
 
+
+
 const ClientPortal = () => {
-  const [user, setUser] = useState({ name: 'John Doe', email: 'john@example.com' });
+  const { customer, isAuthenticated, getCustomerId } = useAuth();
   const [orders, setOrders] = useState([
     {
       id: 'ORD-12345',
@@ -69,30 +73,19 @@ const ClientPortal = () => {
     }
   ]);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [notifications, setNotifications] = useState([
+  const [notifications] = useState([
     { id: 1, message: 'Order ORD-12345 is now in transit', time: '10 minutes ago', read: false },
     { id: 2, message: 'Order ORD-12347 has been delivered', time: '1 day ago', read: true }
   ]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCreateOrder, setShowCreateOrder] = useState(false);
+  const [showSignIn, setShowSignIn] = useState(false);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setOrders(prev => prev.map(order => {
-        if (order.id === 'ORD-12345' && order.status === 'IN_TRANSIT') {
-          const random = Math.random();
-          if (random > 0.98) {
-            return { ...order, status: 'DELIVERED' };
-          }
-        }
-        return order;
-      }));
-    }, 5000);
-    return () => clearInterval(interval);
+
   }, []);
 
   const handleCreateOrder = (orderData) => {
-    // Presaved data for pickupAddress, driverName, items, createdAt, status, estimatedDelivery
     const newOrder = {
       id: `ORD-${Math.floor(Math.random() * 100000)}`,
       pickupAddress: 'Warehouse A, Colombo 01',
@@ -101,6 +94,7 @@ const ClientPortal = () => {
       createdAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
       status: 'PENDING',
       estimatedDelivery: orderData.estimatedDelivery || '',
+      customerId: getCustomerId() || undefined,
       ...orderData
     };
     setOrders([newOrder, ...orders]);
@@ -122,7 +116,11 @@ const ClientPortal = () => {
             {showNotifications && (
               <NotificationList notifications={notifications} onClose={() => setShowNotifications(false)} />
             )}
-            <UserProfile user={user} />
+            {isAuthenticated ? (
+              <UserProfile user={{ name: customer?.name || customer?.fullName || customer?.email || 'Customer' }} />
+            ) : (
+              <button className="create-order-btn" onClick={() => setShowSignIn(true)}>Sign In</button>
+            )}
             <button className="create-order-btn" onClick={() => setShowCreateOrder(true)}>
               + Create Order
             </button>
@@ -162,6 +160,9 @@ const ClientPortal = () => {
             createdAt: new Date().toISOString().slice(0, 16).replace('T', ' ')
           }}
         />
+      )}
+      {showSignIn && (
+        <SignInModal onClose={() => setShowSignIn(false)} />
       )}
     </div>
   );
