@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 @Builder
 public class WarehouseRequestMessage {
     private String orderId;
-    private String correlationId;
     private String customerId;
     private String customerName;
     private String deliveryAddress;
@@ -21,6 +20,6 @@ public class WarehouseRequestMessage {
     private String postalCode;
     private String country;
     private Double totalAmount;
-    private String status; // "BILLED", "READY_FOR_PROCESSING"
+    private String status;
     private LocalDateTime timestamp;
 }

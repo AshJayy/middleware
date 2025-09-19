@@ -1,8 +1,11 @@
 package com.swiftlogistics.orchestrator.service;
 
-import com.swiftlogistics.orchestrator.messaging.publisher.WebSocketPublisher;
+import com.swiftlogistics.orchestrator.messaging.publisher.SsePublisher;
 import com.swiftlogistics.orchestrator.model.Order;
 import com.swiftlogistics.orchestrator.model.Route;
+import com.swiftlogistics.orchestrator.model.enums.EventSource;
+import com.swiftlogistics.orchestrator.model.enums.EventType;
+import com.swiftlogistics.orchestrator.model.enums.OrderStatus;
 import com.swiftlogistics.orchestrator.repository.OrderRepository;
 import com.swiftlogistics.orchestrator.repository.RouteRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,10 +24,9 @@ public class RouteService {
   private final OrderRepository orderRepository;
   private final RouteRepository routeRepository;
   private final EventService eventService;
-  private final WebSocketPublisher webSocketPublisher;
 
 
-  public void createOrderRoute(String orderId, List<String> waypoints, String driverId) {
+  public Route createOrderRoute(String orderId, List<String> waypoints, String driverId) {
     try {
       Optional<Order> order = orderRepository.findById(orderId);
       if (order.isEmpty()) {
@@ -33,21 +35,28 @@ public class RouteService {
 
       Route route = Route.builder()
           .waypoints(waypoints)
-          .driverId(driverId)
-          .orderId(orderId)
           .createdAt(LocalDateTime.now())
           .build();
 
       Route newRoute = routeRepository.save(route);
+        Order updatedOrder = order.get();
+        updatedOrder.setRouteId(newRoute.getRouteId());
+        updatedOrder.setDriverId(driverId);
+        updatedOrder.setStatus(OrderStatus.ROUTED);
+        updatedOrder.setRoutedAt(LocalDateTime.now());
+        orderRepository.save(updatedOrder);
 
       // Log event
-      eventService.logEvent(orderId, route.getRouteId(), "ROUTE_COMPLETED",
-          "ORCHESTRATOR", "Route planning completed and driver assigned");
-
-      // Publish real-time update via WebSocket
-      webSocketPublisher.publishOrderStatusUpdate(orderId, "ROUTED", order);
+      eventService.logSuccessEvent(
+            orderId,
+            EventType.ROUTE_CREATED,
+            EventSource.ROS_ADAPTER,
+            "Route created with driverId: " + driverId
+      );
 
       log.info("Order route updated: orderId={}, driverId={}", orderId, driverId);
+
+        return newRoute;
 
     } catch (Exception e) {
       log.error("Failed to update order route: orderId={}", orderId, e);

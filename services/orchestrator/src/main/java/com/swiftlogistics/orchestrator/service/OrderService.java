@@ -1,14 +1,17 @@
 package com.swiftlogistics.orchestrator.service;
 
 import com.swiftlogistics.orchestrator.dto.CreateOrderRequest;
+import com.swiftlogistics.orchestrator.dto.RouteRequestMessage;
 import com.swiftlogistics.orchestrator.model.Customer;
 import com.swiftlogistics.orchestrator.model.Order;
 import com.swiftlogistics.orchestrator.dto.OrderMessage;
 import com.swiftlogistics.orchestrator.dto.WarehouseRequestMessage;
+import com.swiftlogistics.orchestrator.model.enums.EventSource;
+import com.swiftlogistics.orchestrator.model.enums.EventType;
+import com.swiftlogistics.orchestrator.model.enums.OrderStatus;
 import com.swiftlogistics.orchestrator.repository.CustomerRepository;
 import com.swiftlogistics.orchestrator.repository.OrderRepository;
 import com.swiftlogistics.orchestrator.messaging.publisher.OrderPublisher;
-import com.swiftlogistics.orchestrator.messaging.publisher.WebSocketPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,7 +19,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +28,6 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
     private final OrderPublisher orderPublisher;
-    private final WebSocketPublisher webSocketPublisher;
     private final EventService eventService;
 
     /**
@@ -34,9 +35,6 @@ public class OrderService {
      */
     public Order createOrder(CreateOrderRequest request) {
         try {
-            // Generate correlation ID for tracking across systems
-            String correlationId = UUID.randomUUID().toString();
-            
             // Create order entity
             Order order = Order.builder()
                     .customerId(request.getCustomerId())
@@ -45,8 +43,7 @@ public class OrderService {
                     .postalCode(request.getPostalCode())
                     .country(request.getCountry())
                     .totalAmount(request.getTotalAmount())
-                    .status(Order.OrderStatus.NEW)
-                    .correlationId(correlationId)
+                    .status(OrderStatus.NEW)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();
@@ -55,8 +52,9 @@ public class OrderService {
             Order savedOrder = orderRepository.save(order);
             
             // Log order creation event
-            eventService.logEvent(savedOrder.getOrderId(), correlationId, "ORDER_CREATED", 
-                    "ORCHESTRATOR", "Order created successfully");
+            eventService.logSuccessEvent(
+                    savedOrder.getOrderId(), EventType.ORDER_CREATED, EventSource.ORCHESTRATOR, "Order created successfully"
+            );
 
             // Get customer details
             Customer customer = customerRepository.findById(request.getCustomerId())
@@ -73,7 +71,6 @@ public class OrderService {
                     .postalCode(savedOrder.getPostalCode())
                     .country(savedOrder.getCountry())
                     .totalAmount(savedOrder.getTotalAmount())
-                    .correlationId(correlationId)
                     .timestamp(LocalDateTime.now())
                     .build();
 
@@ -81,14 +78,12 @@ public class OrderService {
             orderPublisher.publishOrderCreated(orderMessage);
             
             // Log order sent to CMS event
-            eventService.logEvent(savedOrder.getOrderId(), correlationId, "ORDER_SENT_TO_CMS", 
-                    "ORCHESTRATOR", "Order sent to CMS for billing");
+            eventService.logSuccessEvent(
+                    savedOrder.getOrderId(), EventType.ORDER_SENT_TO_CMS, EventSource.ORCHESTRATOR, "Order sent to CMS for billing"
+            );
 
-            // Publish real-time update via WebSocket
-            webSocketPublisher.publishOrderStatusUpdate(savedOrder.getOrderId(), "NEW", savedOrder);
-
-            log.info("Order created successfully: orderId={}, correlationId={}", 
-                    savedOrder.getOrderId(), correlationId);
+            log.info("Order created successfully: orderId={}",
+                    savedOrder.getOrderId());
 
             return savedOrder;
 
@@ -101,7 +96,7 @@ public class OrderService {
     /**
      * Update order status (called by billing/warehouse/route subscribers)
      */
-    public Order updateOrderStatus(String orderId, String status, Double billedAmount) {
+    public void updateOrderStatus(String orderId, OrderStatus status) {
         try {
             Optional<Order> orderOpt = orderRepository.findById(orderId);
             if (orderOpt.isEmpty()) {
@@ -109,47 +104,38 @@ public class OrderService {
             }
 
             Order order = orderOpt.get();
-            Order.OrderStatus previousStatus = order.getStatus();
-            Order.OrderStatus newStatus = Order.OrderStatus.valueOf(status);
-            
-            order.setStatus(newStatus);
+            order.setStatus(status);
             order.setUpdatedAt(LocalDateTime.now());
-
-            // Update specific fields based on status
-            switch (newStatus) {
-                case BILLED:
-                    order.setBilledAt(LocalDateTime.now());
-                    if (billedAmount != null) {
-                        order.setTotalAmount(billedAmount);
-                    }
-                    break;
-                case READY:
-                    order.setPackageReadyAt(LocalDateTime.now());
-                    break;
-                case ROUTED:
-                    order.setRoutedAt(LocalDateTime.now());
-                    break;
-                case DELIVERED:
-                    order.setDeliveredAt(LocalDateTime.now());
-                    break;
-            }
-
-            Order updatedOrder = orderRepository.save(order);
-            
-            // Log status change event
-            eventService.logEvent(orderId, order.getCorrelationId(), "ORDER_STATUS_UPDATED", 
-                    "ORCHESTRATOR", String.format("Status changed from %s to %s", previousStatus, newStatus));
-
-            // Publish real-time update via WebSocket
-            webSocketPublisher.publishOrderStatusUpdate(orderId, status, updatedOrder);
+            orderRepository.save(order);
 
             log.info("Order status updated: orderId={}, status={}", orderId, status);
-            
-            return updatedOrder;
 
         } catch (Exception e) {
-            log.error("Failed to update order status: orderId={}, status={}", orderId, status, e);
-            throw e;
+            log.error("Failed to update order status: orderId={}", orderId, e);
+            throw new RuntimeException("Failed to update order status", e);
+        }
+    }
+
+    public void updateOrderStatus(String orderId, OrderStatus status, String billingStatus, Double totalAmount) {
+        try {
+            Optional<Order> orderOpt = orderRepository.findById(orderId);
+            if (orderOpt.isEmpty()) {
+                throw new RuntimeException("Order not found: " + orderId);
+            }
+
+            Order order = orderOpt.get();
+            order.setBillingStatus(billingStatus);
+            order.setStatus(status);
+            order.setTotalAmount(totalAmount);
+            order.setUpdatedAt(LocalDateTime.now());
+            orderRepository.save(order);
+
+            log.info("Order billing updated: orderId={}, billingStatus={}",
+                    orderId, billingStatus);
+
+        } catch (Exception e) {
+            log.error("Failed to update order billing: orderId={}", orderId, e);
+            throw new RuntimeException("Failed to update order billing", e);
         }
     }
 
@@ -168,7 +154,6 @@ public class OrderService {
             // Create warehouse request message
             WarehouseRequestMessage warehouseRequest = WarehouseRequestMessage.builder()
                     .orderId(orderId)
-                    .correlationId(order.getCorrelationId())
                     .customerId(order.getCustomerId())
                     .deliveryAddress(order.getDeliveryAddress())
                     .city(order.getCity())
@@ -183,15 +168,17 @@ public class OrderService {
             orderPublisher.publishToWarehouse(warehouseRequest);
             
             // Log event
-            eventService.logEvent(orderId, order.getCorrelationId(), "ORDER_SENT_TO_WMS", 
-                    "ORCHESTRATOR", "Order sent to WMS for processing");
+            eventService.logSuccessEvent(
+                    orderId, EventType.ORDER_SENT_TO_WMS, EventSource.ORCHESTRATOR, "Order sent to WMS for processing"
+            );
 
             log.info("Order sent to warehouse: orderId={}", orderId);
 
         } catch (Exception e) {
             log.error("Failed to send order to warehouse: orderId={}", orderId, e);
-            eventService.logFailedEvent(orderId, null, "ORDER_SENT_TO_WMS", 
-                    "ORCHESTRATOR", "Failed to send order to WMS", e.getMessage());
+            eventService.logFailedEvent(
+                    orderId, EventType.ORDER_SENT_TO_WMS, EventSource.ORCHESTRATOR, "Failed to send order to WMS"
+            );
             throw e;
         }
     }
@@ -209,72 +196,31 @@ public class OrderService {
             Order order = orderOpt.get();
             
             // Create route planning request
-            OrderMessage routeRequest = OrderMessage.builder()
+            RouteRequestMessage routeRequest = RouteRequestMessage.builder()
                     .orderId(orderId)
-                    .customerId(order.getCustomerId())
                     .deliveryAddress(order.getDeliveryAddress())
                     .city(order.getCity())
                     .postalCode(order.getPostalCode())
                     .country(order.getCountry())
-                    .correlationId(order.getCorrelationId())
-                    .timestamp(LocalDateTime.now())
                     .build();
 
             // Publish to route planning queue for ROS Adapter
             orderPublisher.publishRoutePlanningRequest(routeRequest);
             
             // Log event
-            eventService.logEvent(orderId, order.getCorrelationId(), "ROUTE_REQUESTED", 
-                    "ORCHESTRATOR", "Route planning requested from ROS");
+            eventService.logSuccessEvent(
+                    orderId, EventType.ORDER_SENT_TO_ROS, EventSource.ORCHESTRATOR, "Route planning requested"
+            );
 
             log.info("Route planning requested: orderId={}", orderId);
 
         } catch (Exception e) {
             log.error("Failed to request route planning: orderId={}", orderId, e);
-            eventService.logFailedEvent(orderId, null, "ROUTE_REQUESTED", 
-                    "ORCHESTRATOR", "Failed to request route planning", e.getMessage());
+            eventService.logFailedEvent(
+                    orderId, EventType.ORDER_SENT_TO_ROS, EventSource.ORCHESTRATOR, "Failed to request route planning"
+            );
             throw e;
         }
-    }
-
-    /**
-     * Update order with route information
-     */
-    public void updateOrderRoute(String orderId, List<String> waypoints, String driverId,
-                                 String driverName, String vehicleId) {
-        try {
-            Optional<Order> orderOpt = orderRepository.findById(orderId);
-            if (orderOpt.isEmpty()) {
-                throw new RuntimeException("Order not found: " + orderId);
-            }
-
-            Order order = orderOpt.get();
-            order.setStatus(Order.OrderStatus.ROUTED);
-            order.setRoutedAt(LocalDateTime.now());
-            order.setUpdatedAt(LocalDateTime.now());
-
-            Order updatedOrder = orderRepository.save(order);
-
-            // Log event
-            eventService.logEvent(orderId, order.getCorrelationId(), "ROUTE_COMPLETED",
-                    "ORCHESTRATOR", "Route planning completed and driver assigned");
-
-            // Publish real-time update via WebSocket
-            webSocketPublisher.publishOrderStatusUpdate(orderId, "ROUTED", updatedOrder);
-
-            log.info("Order route updated: orderId={}, driverId={}", orderId, driverId);
-
-        } catch (Exception e) {
-            log.error("Failed to update order route: orderId={}", orderId, e);
-            throw e;
-        }
-    }
-
-    /**
-     * Mark order as delivered
-     */
-    public void markAsDelivered(String orderId) {
-        updateOrderStatus(orderId, "DELIVERED", null);
     }
 
     /**
@@ -291,17 +237,4 @@ public class OrderService {
         return orderRepository.findByCustomerId(customerId);
     }
 
-    /**
-     * Get orders by status
-     */
-    public List<Order> getOrdersByStatus(Order.OrderStatus status) {
-        return orderRepository.findByStatus(status);
-    }
-
-    /**
-     * Get order by correlation ID
-     */
-    public Optional<Order> getOrderByCorrelationId(String correlationId) {
-        return orderRepository.findByCorrelationId(correlationId);
-    }
 }

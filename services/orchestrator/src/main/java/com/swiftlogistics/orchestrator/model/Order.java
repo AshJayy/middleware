@@ -1,5 +1,6 @@
 package com.swiftlogistics.orchestrator.model;
 
+import com.swiftlogistics.orchestrator.model.enums.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,30 +41,18 @@ public class Order {
     
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    private String driverId;
+
+    private String routeId;
     
     private LocalDateTime billedAt;
     private LocalDateTime packageReadyAt;
     private LocalDateTime routedAt;
+    private LocalDateTime pickedUpAt;
     private LocalDateTime deliveredAt;
     
     // Billing Information
     private Double totalAmount;
     private String billingStatus;
-    
-    // Correlation ID for tracking across systems
-    @Indexed
-    private String correlationId;
-    
-    public enum OrderStatus {
-        NEW,           // Order created
-        BILLED,        // CMS billing completed
-        PACKAGING,     // WMS packaging in progress
-        READY,         // WMS package ready
-        ROUTED,        // ROS route planned
-        ASSIGNED,      // Driver assigned
-        IN_TRANSIT,    // Package in transit
-        DELIVERED,     // Delivery completed
-        CANCELLED,     // Order cancelled
-        FAILED         // Order failed
-    }
 }

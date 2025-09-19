@@ -1,0 +1,26 @@
+package com.swiftlogistics.orchestrator.model.enums;
+
+import lombok.Getter;
+
+@Getter
+public enum EventType {
+    ORDER_CREATED,
+    ORDER_SENT_TO_CMS,
+    BILLING_COMPLETED,
+    BILLING_FAILED,
+    BILLING_PENDING,
+    ORDER_SENT_TO_WMS,
+    PACKAGE_READY,
+    WAREHOUSE_FAILED,
+    WAREHOUSE_PROCESSING,
+    ROUTE_CREATED,
+    ROUTE_PENDING,
+    ROUTE_FAILED,
+    ORDER_SENT_TO_ROS,
+    DRIVER_ASSIGNED,
+    DRIVER_UPDATED,
+    DELIVERY_STARTED,
+    DELIVERY_COMPLETED,
+    DELIVERY_FAILED,
+    ORDER_CANCELLED
+}

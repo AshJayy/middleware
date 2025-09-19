@@ -13,10 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 public class BillingUpdateMessage {
     private String orderId;
-    private String correlationId;
     private String status; // "BILLED", "FAILED", "PENDING"
     private Double billedAmount;
-    private String billingTransactionId;
-    private String errorMessage;
     private LocalDateTime timestamp;
 }

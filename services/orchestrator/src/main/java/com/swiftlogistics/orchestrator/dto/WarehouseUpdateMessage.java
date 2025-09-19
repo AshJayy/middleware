@@ -13,12 +13,6 @@ import java.time.LocalDateTime;
 @Builder
 public class WarehouseUpdateMessage {
     private String orderId;
-    private String correlationId;
-    private String status; // "PACKAGE_READY", "FAILED", "PROCESSING"
-    private String packageId;
-    private String warehouseLocation;
-    private String errorMessage;
-    private LocalDateTime packageReadyAt;
-    private LocalDateTime timestamp;
+    private String status;
 }
 

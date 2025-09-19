@@ -21,7 +21,6 @@ public class OrderMessage {
     private String postalCode;
     private String country;
     private Double totalAmount;
-    private String correlationId;
     private LocalDateTime timestamp;
 }
 

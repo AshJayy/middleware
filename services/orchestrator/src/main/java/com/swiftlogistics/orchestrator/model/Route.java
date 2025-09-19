@@ -20,8 +20,8 @@ public class Route {
   @Id
   private String routeId;
 
-  private String driverId;
-  private String orderId;
+//  private String driverId;
+//  private String orderId;
   private List<String> waypoints;
 
   @CreatedDate

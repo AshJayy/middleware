@@ -2,15 +2,18 @@ package com.swiftlogistics.orchestrator.messaging.subscriber;
 
 import com.swiftlogistics.orchestrator.config.RabbitMQConfig;
 import com.swiftlogistics.orchestrator.dto.RouteUpdateMessage;
+import com.swiftlogistics.orchestrator.messaging.publisher.SsePublisher;
+import com.swiftlogistics.orchestrator.model.Route;
+import com.swiftlogistics.orchestrator.model.enums.EventSource;
+import com.swiftlogistics.orchestrator.model.enums.EventType;
+import com.swiftlogistics.orchestrator.model.enums.OrderStatus;
 import com.swiftlogistics.orchestrator.service.OrderService;
 import com.swiftlogistics.orchestrator.service.EventService;
+import com.swiftlogistics.orchestrator.service.RouteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
@@ -24,9 +27,9 @@ import org.springframework.stereotype.Service;
 public class RouteSubscriber {
 
     private final OrderService orderService;
+    private final RouteService routeService;
     private final EventService eventService;
-    private final SimpMessagingTemplate messagingTemplate;
-    private final RabbitTemplate rabbitTemplate;
+    private final SsePublisher ssePublisher;
 
     @RabbitListener(queues = RabbitMQConfig.QUEUE_ROUTE_UPDATES)
     @Retryable(
@@ -35,64 +38,18 @@ public class RouteSubscriber {
         backoff = @Backoff(delay = 2000)
     )
     public void processRouteUpdate(RouteUpdateMessage routeUpdate) throws Exception {
-        log.info("Processing route update for order: {} with status: {}", 
-                routeUpdate.getOrderId(), routeUpdate.getStatus());
-
         try {
-            // Log the event
-            eventService.logEvent(
-                routeUpdate.getOrderId(),
-                routeUpdate.getCorrelationId(),
-                "ROUTE_UPDATE_RECEIVED",
-                "ROUTE_SERVICE",
-                "Route update: " + routeUpdate.getStatus()
-            );
+            log.info("Received route update: orderId={}, status={}",
+                    routeUpdate.getOrderId(), routeUpdate.getStatus());
 
             // Process based on route status
             switch (routeUpdate.getStatus().toUpperCase()) {
-                case "ROUTED":
-                    // Route is complete with driver assignment
-                    orderService.updateOrderRoute(
-                        routeUpdate.getOrderId(),
-                        routeUpdate.getWaypoints(),
-                        routeUpdate.getDriverId(),
-                        routeUpdate.getDriverName(),
-                        routeUpdate.getVehicleId()
-                    );
-                    break;
-                    
-                case "OPTIMIZING":
-                    // Route is being optimized - just log for now
-                    eventService.logEvent(
-                        routeUpdate.getOrderId(),
-                        routeUpdate.getCorrelationId(),
-                        "ROUTE_OPTIMIZING",
-                        "ROUTE_SERVICE",
-                        "Route optimization in progress"
-                    );
-                    break;
-                    
-                case "FAILED":
-                    eventService.logFailedEvent(
-                        routeUpdate.getOrderId(),
-                        routeUpdate.getCorrelationId(),
-                        "ROUTE_PLANNING_FAILED",
-                        "ROUTE_SERVICE",
-                        "Route planning failed",
-                        routeUpdate.getErrorMessage()
-                    );
-                    throw new Exception("Route planning failed: " + routeUpdate.getErrorMessage());
-                    
-                default:
-                    log.warn("Unknown route status: {} for order: {}", 
+                case "ROUTED" -> handleRouted(routeUpdate);
+                case "FAILED" -> handleRouteFailure(routeUpdate);
+                case "ROUTING" -> handleRouting(routeUpdate);
+                default -> log.warn("Unknown route status: {} for order: {}",
                             routeUpdate.getStatus(), routeUpdate.getOrderId());
             }
-
-            // Notify WebSocket clients
-            messagingTemplate.convertAndSend(
-                "/topic/orders/" + routeUpdate.getOrderId() + "/route-updates",
-                routeUpdate
-            );
 
             log.info("Route update processed successfully for order: {}", routeUpdate.getOrderId());
 
@@ -101,37 +58,80 @@ public class RouteSubscriber {
             
             eventService.logFailedEvent(
                 routeUpdate.getOrderId(),
-                routeUpdate.getCorrelationId(),
-                "ROUTE_UPDATE_PROCESSING_FAILED",
-                "ORCHESTRATOR",
-                "Failed to process route update",
-                e.getMessage()
+                    EventType.ROUTE_FAILED,
+                    EventSource.ROS_ADAPTER,
+                "Failed to process route update: " + e.getMessage()
             );
-            
-            throw e;
         }
     }
 
-    @Recover
-    public void recover(Exception e, RouteUpdateMessage routeUpdate) {
-        log.error("Route update processing failed after retries for order: {}. Sending to DLQ", 
-                routeUpdate.getOrderId(), e);
-        
-        // Log final failure
+    private void handleRouted(RouteUpdateMessage routeUpdate) {
+        // Update order status to ROUTED
+        orderService.updateOrderStatus(routeUpdate.getOrderId(), OrderStatus.ROUTED);
+
+        // Create route in the system
+        Route route = routeService.createOrderRoute(
+                routeUpdate.getOrderId(),
+                routeUpdate.getWaypoints(),
+                routeUpdate.getDriverId()
+        );
+
+        // Log success event
+        eventService.logSuccessEvent(
+                routeUpdate.getOrderId(),
+                EventType.ROUTE_CREATED,
+                EventSource.ROS_ADAPTER,
+                "Route created with driverId: " + routeUpdate.getDriverId()
+        );
+
+        // Notify clients via SSE
+        ssePublisher.publishOrderStatusUpdate(
+                routeUpdate.getOrderId(), OrderStatus.ROUTED, "Route created successfully"
+        );
+
+//        ssePublisher.publishDriverUpdate(route.getRouteId());
+
+        log.info("Order routed successfully: orderId={}, driverId={}",
+                routeUpdate.getOrderId(), routeUpdate.getDriverId());
+    }
+
+    private void handleRouteFailure(RouteUpdateMessage routeUpdate) {
+        // Update order status to ROUTE_FAILED
+        orderService.updateOrderStatus(routeUpdate.getOrderId(), OrderStatus.ROUTE_FAILED);
+
+        // Log failure event
         eventService.logFailedEvent(
-            routeUpdate.getOrderId(),
-            routeUpdate.getCorrelationId(),
-            "ROUTE_UPDATE_FINAL_FAILURE",
-            "ORCHESTRATOR",
-            "Route update processing failed after all retries",
-            e.getMessage()
+                routeUpdate.getOrderId(),
+                EventType.ROUTE_FAILED,
+                EventSource.ROS_ADAPTER,
+                "Route planning failed"
         );
-        
-        // Send to DLQ
-        rabbitTemplate.convertAndSend(
-            RabbitMQConfig.EXCHANGE_ROUTE + RabbitMQConfig.DLX_SUFFIX,
-            RabbitMQConfig.QUEUE_ROUTE_UPDATES + RabbitMQConfig.DLQ_SUFFIX,
-            routeUpdate
+
+        // Notify clients via SSE
+        ssePublisher.publishOrderStatusUpdate(
+                routeUpdate.getOrderId(), OrderStatus.ROUTE_FAILED, "Route planning failed"
         );
+
+        log.error("Route planning failed for order: {}", routeUpdate.getOrderId());
+    }
+
+    private void handleRouting(RouteUpdateMessage routeUpdate) {
+        // Update order status to ROUTING (optional, depending on business logic)
+        orderService.updateOrderStatus(routeUpdate.getOrderId(), OrderStatus.ROUTING);
+
+        // Log pending event but don't change order status yet
+        eventService.logPendingEvent(
+                routeUpdate.getOrderId(),
+                EventType.ROUTE_PENDING,
+                EventSource.ROS_ADAPTER,
+                "Route planning is in progress"
+        );
+
+        // Notify clients via SSE
+        ssePublisher.publishOrderStatusUpdate(
+                routeUpdate.getOrderId(), OrderStatus.ROUTING, "Route planning is in progress"
+        );
+
+        log.info("Route planning in progress for order: {}", routeUpdate.getOrderId());
     }
 }

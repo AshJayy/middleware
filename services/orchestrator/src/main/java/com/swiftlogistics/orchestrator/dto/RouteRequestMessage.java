@@ -11,5 +11,8 @@ import lombok.NoArgsConstructor;
 @Builder
 public class RouteRequestMessage {
     private String orderId;
-    private String address;
+    private String deliveryAddress;
+    private String city;
+    private String postalCode;
+    private String country;
 }

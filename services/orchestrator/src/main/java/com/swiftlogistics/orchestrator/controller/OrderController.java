@@ -22,7 +22,6 @@ import java.util.Map;
 @RequestMapping("/api/v1/orders")
 @RequiredArgsConstructor
 @Slf4j
-@CrossOrigin(origins = "*")
 public class OrderController {
 
     private final OrderService orderService;
@@ -37,10 +36,6 @@ public class OrderController {
 
         try {
             Order order = orderService.createOrder(request);
-
-            log.info("Order created successfully: orderId={}, correlationId={}", 
-                    order.getOrderId(), order.getCorrelationId());
-
             return ResponseEntity.ok(order);
 
         } catch (Exception e) {
@@ -66,30 +61,6 @@ public class OrderController {
     public ResponseEntity<List<Order>> getOrdersByCustomer(@PathVariable String customerId) {
         List<Order> orders = orderService.getOrdersByCustomer(customerId);
         return ResponseEntity.ok(orders);
-    }
-
-    /**
-     * Get orders by status
-     */
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<Order>> getOrdersByStatus(@PathVariable String status) {
-        try {
-            Order.OrderStatus orderStatus = Order.OrderStatus.valueOf(status.toUpperCase());
-            List<Order> orders = orderService.getOrdersByStatus(orderStatus);
-            return ResponseEntity.ok(orders);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().build();
-        }
-    }
-
-    /**
-     * Get order by correlation ID
-     */
-    @GetMapping("/correlation/{correlationId}")
-    public ResponseEntity<Order> getOrderByCorrelationId(@PathVariable String correlationId) {
-        Optional<Order> order = orderService.getOrderByCorrelationId(correlationId);
-        return order.map(ResponseEntity::ok)
-                   .orElse(ResponseEntity.notFound().build());
     }
 
     /**

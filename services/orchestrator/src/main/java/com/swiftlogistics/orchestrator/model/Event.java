@@ -1,5 +1,8 @@
 package com.swiftlogistics.orchestrator.model;
 
+import com.swiftlogistics.orchestrator.model.enums.EventSource;
+import com.swiftlogistics.orchestrator.model.enums.EventStatus;
+import com.swiftlogistics.orchestrator.model.enums.EventType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,58 +28,15 @@ public class Event {
     @Indexed
     private String orderId;
     
-    @Indexed
-    private String correlationId;
-    
     private EventType eventType;
     
     private EventSource source;
     
     private String description;
     
-    // Event payload/details
-    private Map<String, Object> payload;
-    
-    @CreatedDate
-    private LocalDateTime timestamp;
-    
     // Success/failure status
     private EventStatus status;
-    
-    private String errorMessage;
-    
-    public enum EventType {
-        ORDER_CREATED,
-        ORDER_SENT_TO_CMS,
-        BILLING_COMPLETED,
-        BILLING_FAILED,
-        ORDER_SENT_TO_WMS,
-        PACKAGE_READY,
-        WAREHOUSE_FAILED,
-        ROUTE_REQUESTED,
-        ROUTE_COMPLETED,
-        ROUTE_FAILED,
-        DRIVER_ASSIGNED,
-        DRIVER_UPDATED,
-        DELIVERY_STARTED,
-        DELIVERY_COMPLETED,
-        DELIVERY_FAILED,
-        ORDER_CANCELLED
-    }
-    
-    public enum EventSource {
-        ORCHESTRATOR,
-        CMS_ADAPTER,
-        WMS_ADAPTER,
-        ROS_ADAPTER,
-        DRIVER_APP,
-        CLIENT_PORTAL
-    }
-    
-    public enum EventStatus {
-        SUCCESS,
-        FAILED,
-        PENDING,
-        WARNING
-    }
+
+    @CreatedDate
+    private LocalDateTime timestamp;
 }
