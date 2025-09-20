@@ -59,6 +59,23 @@ services:
         condition: service_healthy
     networks:
       - swift-network
+    
+    # ROS integration service
+  ros-integration:
+    build:
+      context: ../services/ros-integration
+      dockerfile: Dockerfile
+    container_name: swift-ros-integration
+    restart: unless-stopped
+    ports:
+      - "8004:8000" # Application port
+    env_file:
+      - ../services/ros-integration/.env
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swift-network
 
 # Named volumes for data persistence
 volumes:
