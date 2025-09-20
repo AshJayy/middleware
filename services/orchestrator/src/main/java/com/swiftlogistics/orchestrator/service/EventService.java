@@ -1,15 +1,16 @@
 package com.swiftlogistics.orchestrator.service;
 
 import com.swiftlogistics.orchestrator.model.Event;
+import com.swiftlogistics.orchestrator.model.enums.EventSource;
+import com.swiftlogistics.orchestrator.model.enums.EventStatus;
+import com.swiftlogistics.orchestrator.model.enums.EventType;
 import com.swiftlogistics.orchestrator.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -21,56 +22,46 @@ public class EventService {
     /**
      * Log an event to MongoDB for auditing
      */
-    public void logEvent(String orderId, String correlationId, String eventType,
-                         String source, String description) {
-        logEvent(orderId, correlationId, eventType, source, description, null, "SUCCESS", null);
-    }
-
-    /**
-     * Log an event with additional payload
-     */
-    public Event logEvent(String orderId, String correlationId, String eventType, 
-                         String source, String description, Map<String, Object> payload) {
-        return logEvent(orderId, correlationId, eventType, source, description, payload, "SUCCESS", null);
+    public void logSuccessEvent(String orderId, EventType eventType, EventSource source, String description) {
+        logEvent(orderId, eventType, source, description, EventStatus.SUCCESS);
     }
 
     /**
      * Log a failed event
      */
-    public void logFailedEvent(String orderId, String correlationId, String eventType,
-                               String source, String description, String errorMessage) {
-        logEvent(orderId, correlationId, eventType, source, description, null, "FAILED", errorMessage);
+    public void logFailedEvent(String orderId, EventType eventType, EventSource source, String description) {
+        logEvent(orderId, eventType, source, description,  EventStatus.FAILED);
+    }
+
+    /**
+     * Log a pending event
+     */
+    public void logPendingEvent(String orderId, EventType eventType, EventSource source, String description) {
+        logEvent(orderId, eventType, source, description, EventStatus.PENDING);
     }
 
     /**
      * Comprehensive event logging method
      */
-    public Event logEvent(String orderId, String correlationId, String eventType, 
-                         String source, String description, Map<String, Object> payload, 
-                         String status, String errorMessage) {
+    public void logEvent(String orderId, EventType eventType, EventSource source, String description, EventStatus status) {
         try {
             Event event = Event.builder()
                     .orderId(orderId)
-                    .correlationId(correlationId)
-                    .eventType(Event.EventType.valueOf(eventType))
-                    .source(Event.EventSource.valueOf(source))
+                    .eventType(eventType)
+                    .source(source)
                     .description(description)
-                    .payload(payload != null ? payload : new HashMap<>())
                     .timestamp(LocalDateTime.now())
-                    .status(Event.EventStatus.valueOf(status))
-                    .errorMessage(errorMessage)
+                    .status(status)
                     .build();
 
-            Event savedEvent = eventRepository.save(event);
+            eventRepository.save(event);
             
-            log.info("Event logged: orderId={}, correlationId={}, eventType={}, source={}, status={}", 
-                    orderId, correlationId, eventType, source, status);
-            
-            return savedEvent;
-            
+            log.info("Event logged: orderId={}, eventType={}, source={}, status={}",
+                    orderId, eventType, source, status);
+
         } catch (Exception e) {
-            log.error("Failed to log event: orderId={}, correlationId={}, eventType={}", 
-                    orderId, correlationId, eventType, e);
+            log.error("Failed to log event: orderId={}, eventType={}",
+                    orderId, eventType, e);
             throw e;
         }
     }
@@ -82,41 +73,4 @@ public class EventService {
         return eventRepository.findByOrderIdOrderByTimestampDesc(orderId);
     }
 
-    /**
-     * Get events by correlation ID (across all orders for the same flow)
-     */
-    public List<Event> getEventsByCorrelationId(String correlationId) {
-        return eventRepository.findByCorrelationIdOrderByTimestampDesc(correlationId);
-    }
-
-    /**
-     * Get failed events for monitoring
-     */
-    public List<Event> getFailedEvents() {
-        return eventRepository.findFailedEvents();
-    }
-
-    /**
-     * Get recent events for an order (last hour)
-     */
-    public List<Event> getRecentOrderEvents(String orderId) {
-        LocalDateTime oneHourAgo = LocalDateTime.now().minusHours(1);
-        return eventRepository.findRecentEventsByOrderId(orderId, oneHourAgo);
-    }
-
-    /**
-     * Create payload for common order events
-     */
-    public Map<String, Object> createOrderPayload(String orderId, String status, Object additionalData) {
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("orderId", orderId);
-        payload.put("status", status);
-        payload.put("timestamp", LocalDateTime.now());
-        
-        if (additionalData != null) {
-            payload.put("data", additionalData);
-        }
-        
-        return payload;
-    }
 }

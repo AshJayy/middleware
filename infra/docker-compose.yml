@@ -77,6 +77,48 @@ services:
     networks:
       - swift-network
 
+  cms:
+    build:
+      context: ../legacy/cms
+      dockerfile: Dockerfile
+    container_name: cms-mock-service
+    ports:
+      - "5001:5001"
+    environment:
+      - SERVER_PORT=5001
+      - SPRING_APPLICATION_NAME=cms-mock
+      - JAVA_OPTS=-Xmx512m -Xms256m
+
+  cms-adapter:
+    build:
+      context: ../services/cms-adapter
+      dockerfile: Dockerfile
+    container_name: swift-cms-adapter
+    restart: unless-stopped
+    ports:
+      - "8001:8001" # Application port
+    env_file:
+      - ../services/cms-adapter/.env
+    depends_on:
+      cms:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - swift-network
+
+  client-portal:
+    build:
+      context: ../ui/client-portal
+      dockerfile: Dockerfile
+    container_name: swift-client-portal
+    restart: unless-stopped
+    ports:
+        - "3000:3000" # Application port
+    networks:
+      - swift-network
+
+
 # Named volumes for data persistence
 volumes:
   rabbitmq_data:

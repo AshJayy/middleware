@@ -1,6 +1,7 @@
 package com.swiftlogistics.orchestrator.repository;
 
 import com.swiftlogistics.orchestrator.model.Order;
+import com.swiftlogistics.orchestrator.model.enums.OrderStatus;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -15,9 +16,7 @@ public interface OrderRepository extends MongoRepository<Order, String> {
     List<Order> findByCustomerId(String customerId);
     
     // Find orders by status
-    List<Order> findByStatus(Order.OrderStatus status);
-    
-    // Find orders by correlation ID (for tracking across systems)
-    Optional<Order> findByCorrelationId(String correlationId);
+    List<Order> findByStatus(OrderStatus status);
 
+    List<Order> findByStatusAndDriverId(OrderStatus status, String driverId);
 }

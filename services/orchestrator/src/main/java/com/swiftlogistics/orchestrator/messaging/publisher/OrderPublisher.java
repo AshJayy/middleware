@@ -1,8 +1,9 @@
 package com.swiftlogistics.orchestrator.messaging.publisher;
 
 import com.swiftlogistics.orchestrator.config.RabbitMQConfig;
-import com.swiftlogistics.orchestrator.model.OrderMessage;
-import com.swiftlogistics.orchestrator.model.WarehouseRequestMessage;
+import com.swiftlogistics.orchestrator.dto.OrderMessage;
+import com.swiftlogistics.orchestrator.dto.RouteRequestMessage;
+import com.swiftlogistics.orchestrator.dto.WarehouseRequestMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -26,8 +27,8 @@ public class OrderPublisher {
                     RabbitMQConfig.ROUTING_KEY_ORDER_CREATED,
                     orderMessage
             );
-            log.info("Published Order Created event: orderId={}, correlationId={}", 
-                    orderMessage.getOrderId(), orderMessage.getCorrelationId());
+            log.info("Published Order Created event: orderId={}",
+                    orderMessage.getOrderId());
         } catch (Exception e) {
             log.error("Failed to publish Order Created event: orderId={}", orderMessage.getOrderId(), e);
             throw e;
@@ -45,8 +46,8 @@ public class OrderPublisher {
                     RabbitMQConfig.ROUTING_KEY_WAREHOUSE_REQUEST,
                     warehouseRequest
             );
-            log.info("Published Order to Warehouse: orderId={}, correlationId={}", 
-                    warehouseRequest.getOrderId(), warehouseRequest.getCorrelationId());
+            log.info("Published Order to Warehouse: orderId={}",
+                    warehouseRequest.getOrderId());
         } catch (Exception e) {
             log.error("Failed to publish to Warehouse: orderId={}", warehouseRequest.getOrderId(), e);
             throw e;
@@ -57,17 +58,17 @@ public class OrderPublisher {
      * Step 4: Publish route planning request
      * This is consumed by ROS Adapter
      */
-    public void publishRoutePlanningRequest(OrderMessage orderMessage) {
+    public void publishRoutePlanningRequest(RouteRequestMessage routeRequestMessage) {
         try {
             rabbitTemplate.convertAndSend(
                     RabbitMQConfig.EXCHANGE_ROUTE,
                     RabbitMQConfig.ROUTING_KEY_ROUTE_PLANNING,
-                    orderMessage
+                    routeRequestMessage
             );
-            log.info("Published Route Planning request: orderId={}, correlationId={}", 
-                    orderMessage.getOrderId(), orderMessage.getCorrelationId());
+            log.info("Published Route Planning request: orderId={}",
+                    routeRequestMessage.getOrderId());
         } catch (Exception e) {
-            log.error("Failed to publish Route Planning request: orderId={}", orderMessage.getOrderId(), e);
+            log.error("Failed to publish Route Planning request: orderId={}", routeRequestMessage.getOrderId(), e);
             throw e;
         }
     }

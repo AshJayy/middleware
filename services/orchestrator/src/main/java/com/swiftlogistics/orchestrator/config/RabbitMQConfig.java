@@ -32,16 +32,6 @@ public class RabbitMQConfig {
     public static final String EXCHANGE_ROUTE = "route.exchange";
     public static final String ROUTING_KEY_ROUTE_PLANNING = "route.planning";
     public static final String ROUTING_KEY_ROUTE_UPDATE = "route.update";
-    
-    // Step 5: Driver Operations
-    public static final String QUEUE_DRIVER_UPDATES = "driver-updates";
-    public static final String EXCHANGE_DRIVER = "driver.exchange";
-    public static final String ROUTING_KEY_DRIVER_UPDATE = "driver.update";
-    
-    // Step 6: Delivery Operations
-    public static final String QUEUE_DELIVERY_UPDATES = "delivery-updates";
-    public static final String EXCHANGE_DELIVERY = "delivery.exchange";
-    public static final String ROUTING_KEY_DELIVERY_UPDATE = "delivery.update";
 
     // Dead-letter queues
     public static final String DLQ_SUFFIX = ".dlq";
@@ -67,16 +57,6 @@ public class RabbitMQConfig {
     @Bean
     public DirectExchange routeExchange() {
         return new DirectExchange(EXCHANGE_ROUTE, true, false);
-    }
-    
-    @Bean
-    public DirectExchange driverExchange() {
-        return new DirectExchange(EXCHANGE_DRIVER, true, false);
-    }
-    
-    @Bean
-    public DirectExchange deliveryExchange() {
-        return new DirectExchange(EXCHANGE_DELIVERY, true, false);
     }
 
     // === QUEUES ===
@@ -128,22 +108,6 @@ public class RabbitMQConfig {
                 .withArgument("x-dead-letter-routing-key", QUEUE_ROUTE_UPDATES + DLQ_SUFFIX)
                 .build();
     }
-    
-    @Bean
-    public Queue driverUpdatesQueue() {
-        return QueueBuilder.durable(QUEUE_DRIVER_UPDATES)
-                .withArgument("x-dead-letter-exchange", EXCHANGE_DRIVER + DLX_SUFFIX)
-                .withArgument("x-dead-letter-routing-key", QUEUE_DRIVER_UPDATES + DLQ_SUFFIX)
-                .build();
-    }
-    
-    @Bean
-    public Queue deliveryUpdatesQueue() {
-        return QueueBuilder.durable(QUEUE_DELIVERY_UPDATES)
-                .withArgument("x-dead-letter-exchange", EXCHANGE_DELIVERY + DLX_SUFFIX)
-                .withArgument("x-dead-letter-routing-key", QUEUE_DELIVERY_UPDATES + DLQ_SUFFIX)
-                .build();
-    }
 
     // === BINDINGS ===
     
@@ -175,15 +139,5 @@ public class RabbitMQConfig {
     @Bean
     public Binding bindingRouteUpdates() {
         return BindingBuilder.bind(routeUpdatesQueue()).to(routeExchange()).with(ROUTING_KEY_ROUTE_UPDATE);
-    }
-    
-    @Bean
-    public Binding bindingDriverUpdates() {
-        return BindingBuilder.bind(driverUpdatesQueue()).to(driverExchange()).with(ROUTING_KEY_DRIVER_UPDATE);
-    }
-    
-    @Bean
-    public Binding bindingDeliveryUpdates() {
-        return BindingBuilder.bind(deliveryUpdatesQueue()).to(deliveryExchange()).with(ROUTING_KEY_DELIVERY_UPDATE);
     }
 }

@@ -8,7 +8,7 @@ class RabbitMQClient:
         self.lock = threading.Lock()
         self.connection = pika.BlockingConnection(
             pika.ConnectionParameters(
-                host=os.getenv("RABBITMQ_HOST", "localhost"),
+                host=os.getenv("RABBITMQ_HOST", "swift-rabbitmq"),
                 port=int(os.getenv("RABBITMQ_PORT", 5672)),
                 credentials=pika.PlainCredentials(
                     os.getenv("RABBITMQ_USER", "guest"),
