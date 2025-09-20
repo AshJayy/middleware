@@ -1,43 +1,44 @@
 import apiClient from './network';
 
 /**
- * Fetches the assigned route and delivery manifest for a specific driver.
- * Corresponds to the driver's need to view their assigned route for the day.
+ * Fetches the list of pending orders assigned to a specific driver.
+ * This corresponds to the GET /api/v1/orders/driver/{driverId} endpoint.
  *
  * @param {string} driverId - The ID of the logged-in driver.
- * @returns {Promise<object>} The driver's route and manifest.
+ * @returns {Promise<object>} A promise that resolves to the list of orders.
  */
-export const getDriverRoute = (driverId) => {
+export const getAssignedOrders = (driverId) => {
     if (!driverId) {
         return Promise.reject(new Error('Driver ID is required.'));
     }
-    return apiClient.get(`/drivers/${driverId}/route`);
+    // Note the '/orders' in the path, matching the controller's base path
+    return apiClient.get(`/drivers/driver/${driverId}`);
 };
 
 /**
- * Updates the status of a specific delivery.
- * This is crucial for the driver to mark packages as "delivered" or "failed".
+ * Marks a specific order's delivery as started.
+ * This corresponds to the PUT /api/v1/orders/driver/start/{orderId} endpoint.
  *
- * @param {object} updateData - The data for the update.
- * @param {string} updateData.orderId - The ID of the order being updated.
- * @param {string} updateData.status - The new status (e.g., 'DELIVERED', 'FAILED').
- * @param {string} [updateData.reason] - The reason for failure, if applicable.
- * @param {string} [updateData.proofOfDelivery] - A URL to the signature or photo.
- * @returns {Promise<object>} The server's confirmation response.
+ * @param {string} orderId - The ID of the order to start.
+ * @returns {Promise<object>} A promise that resolves on success.
  */
-export const updateDeliveryStatus = (updateData) => {
-    const { orderId, status, reason, proofOfDelivery } = updateData;
-
-    if (!orderId || !status) {
-        return Promise.reject(new Error('Order ID and status are required.'));
+export const startDelivery = (orderId) => {
+    if (!orderId) {
+        return Promise.reject(new Error('Order ID is required.'));
     }
+    return apiClient.put(`/drivers/driver/start/${orderId}`);
+};
 
-    const payload = {
-        orderId,
-        status,
-        reason,
-        proofOfDelivery,
-    };
-
-    return apiClient.post('/drivers/deliveries/update', payload);
+/**
+ * Marks a specific order's delivery as complete.
+ * This corresponds to the PUT /api/v1/orders/driver/complete/{orderId} endpoint.
+ *
+ * @param {string} orderId - The ID of the order to complete.
+ * @returns {Promise<object>} A promise that resolves on success.
+ */
+export const completeDelivery = (orderId) => {
+    if (!orderId) {
+        return Promise.reject(new Error('Order ID is required.'));
+    }
+    return apiClient.put(`/drivers/driver/complete/${orderId}`);
 };
