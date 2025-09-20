@@ -37,7 +37,7 @@ class RabbitMQClient:
 
     def publish(self, queue, message):
         """Publish using a fresh connection to avoid thread issues."""
-        if message.status != "READY":
+        if message["status"] != "READY":
             print(f"[RABBITMQ] Skipping publish for non-READY status: {message}")
             return
         connection, channel = self._new_publish_channel()

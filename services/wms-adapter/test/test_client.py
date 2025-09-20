@@ -3,12 +3,9 @@ import types
 import json
 import unittest
 from unittest.mock import MagicMock
-from pathlib import Path
-import importlib.util
 
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
-CLIENT_PATH = REPO_ROOT / 'services' / 'wms-adapter' / 'app' / 'rabbitmq' / 'client.py'
+APP_PATH = __file__.split('/services/wms-adapter/')[0] + '/services/wms-adapter/app'
 
 
 def install_stub_pika(channel_mock: MagicMock, connection_mock: MagicMock):
@@ -44,16 +41,14 @@ def install_stub_pika(channel_mock: MagicMock, connection_mock: MagicMock):
 def import_client_module():
     # Force-load the client module from file path
     if 'rabbitmq.client' in sys.modules:
-        del sys.modules['rabbitmq.client']
-    spec = importlib.util.spec_from_file_location('rabbitmq.client', str(CLIENT_PATH))
-    module = importlib.util.module_from_spec(spec)
-    loader = spec.loader
-    assert loader is not None
-    loader.exec_module(module)
-    sys.modules['rabbitmq.client'] = module
-    return module
-
-
+    # Ensure we import fresh with stubbed pika and path to app
+    if APP_PATH not in sys.path:
+        sys.path.insert(0, APP_PATH)
+    for name in list(sys.modules.keys()):
+        if name == 'rabbitmq.client' or name == 'rabbitmq':
+            del sys.modules[name]
+    import importlib
+    return importlib.import_module('rabbitmq.client')
 class RabbitMQClientTests(unittest.TestCase):
     def test_publish_success(self):
         channel = MagicMock()
