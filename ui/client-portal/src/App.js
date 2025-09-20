@@ -71,14 +71,14 @@ const ClientPortal = () => {
     }
   }, [isAuthenticated, fetchOrders]);
 
-  const handleCreateOrder = (orderData) => {
+  const handleCreateOrder = async (orderData) => {
     const newOrder = {
+      ...orderData,
       customerId: getCustomerId() || undefined,
       status: 'PENDING',
       estimatedDelivery: orderData.estimatedDelivery || '',
-      ...orderData
     };
-    const createdOrder = orderEndpoints.createOrder(newOrder);
+    const createdOrder = await orderEndpoints.createOrder(newOrder);
     setOrders([createdOrder, ...orders]);
     setShowCreateOrder(false);
   };

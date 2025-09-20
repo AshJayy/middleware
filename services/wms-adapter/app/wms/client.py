@@ -3,7 +3,7 @@ import socket, json, os
 
 class WMSClient:
     def __init__(self):
-        self.host = os.getenv("WMS_TCP_HOST", "localhost")
+        self.host = os.getenv("WMS_TCP_HOST", "localhost") #On docker wms runs in the same container as wms-adapter, so localhost is fine
         self.port = int(os.getenv("WMS_TCP_PORT", 9000))
         self.sock = None
         self.connect()

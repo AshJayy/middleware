@@ -1,0 +1,28 @@
+# Keep Python image lean and avoid leaking secrets
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.build/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.DS_Store
+.git/
+.gitignore
+.vscode/
+.idea/
+.venv/
+venv/
+.env
+*.log
+
+# Allow only what the Dockerfile needs
+!Dockerfile
+!requirements.txt
+!entrypoint.sh
+!*.py
+

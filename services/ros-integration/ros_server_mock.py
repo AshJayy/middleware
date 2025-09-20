@@ -6,7 +6,6 @@ from typing import List
 
 app = FastAPI(title="Mock Route Optimization System")
 
-# Pydantic models to validate incoming request data, ensuring a clear contract.
 class Address(BaseModel):
     fullAddress: str
     city: str
@@ -15,33 +14,28 @@ class Address(BaseModel):
 class RouteRequest(BaseModel):
     orderId: str
     vehicleId: str
-    pickup: Address  
+    pickup: Address
     delivery: Address
 
 @app.post("/optimize-route")
 async def optimize_route(request: RouteRequest):
-    """
-    This endpoint simulates calculating an optimized route. It introduces
-    an artificial delay to mimic a real-world network call, a key aspect
-    of testing asynchronous communication.
-    """
     print(f"Mock ROS received request for Order ID: {request.orderId}")
-    print(f"Routing from {request.pickup.fullAddress} to {request.delivery.fullAddress}")
-    await asyncio.sleep(2)  # Simulate network latency
+    print(f"Routing from {request.pickup.city} to {request.delivery.city}")
+    await asyncio.sleep(1) # Reduced delay for faster testing
 
-    # Generate a fake but realistic response, fulfilling the API contract.
+    # --- MODIFIED RESPONSE PAYLOAD ---
     mock_route = {
         "routeId": f"route_{random.randint(1000, 9999)}",
         "orderId": request.orderId,
         "vehicleId": request.vehicleId,
         "status": "OPTIMIZED",
-        "estimatedDurationMinutes": random.randint(30, 120),
-        "pickupLocation": request.pickup.dict(),
-        "deliveryLocation": request.delivery.dict()
+        # New 'waypoints' field with mock data
+        "waypoints": [
+            request.pickup.city,
+            "Kottawa",
+            "Kadawatha",
+            request.delivery.city
+        ]
     }
     print(f"Mock ROS responding for Order ID: {request.orderId}")
     return mock_route
-
-# --- How to run this mock server ---
-# 3. Run the command: pip install "fastapi[all]"
-# 4. Run the command: uvicorn ros_server_mock:app --reload --port 3001

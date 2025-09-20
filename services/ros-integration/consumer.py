@@ -4,6 +4,7 @@ import asyncio
 import httpx
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+from datetime import datetime, timezone
 
 # --- Configuration ---
 # Using environment variables for configuration is a best practice.
@@ -12,14 +13,15 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://orchestrator:LRg4OV1lEtpA5WMs@
 # This special URL points from inside a Docker container to your host machine.
 ROS_API_URL = "http://host.docker.internal:3001/optimize-route"
 
-# Queue names must match what the orchestrator uses.
-INCOMING_QUEUE = "routing-queue"
-OUTGOING_QUEUE = "order-updates-queue"
+# --- UPDATED QUEUE NAMES ---
+INCOMING_QUEUE = "route-planning-queue"
+OUTGOING_QUEUE = "route-updates-queue"
 
 # --- Database Connection ---
 client = AsyncIOMotorClient(MONGO_URI)
-db = client.swiftlogistics
-vehicles_collection = db.vehicles
+db = client['swift-logic'] # Use the correct database name from the URI
+# --- UPDATED COLLECTION NAME ---
+drivers_collection = db.drivers
 
 async def start_consumer():
     """Connects to RabbitMQ and starts the main consumer loop."""
@@ -50,13 +52,14 @@ async def process_message(channel, method_frame, body):
     order_id = order_data.get("orderId")
     print(f"Received routing request for Order ID: {order_id}")
 
-    # 1. Find an available vehicle from MongoDB.
-    vehicle = await vehicles_collection.find_one({"isAvailable": True})
-    if not vehicle:
-        raise Exception(f"No available vehicles found for order {order_id}")
-    
-    vehicle_id = vehicle["vehicleId"]
-    print(f"Found available vehicle: {vehicle_id}")
+    # 1. Find an available driver from the 'drivers' collection.
+    available_driver = await drivers_collection.find_one({"isAvailable": True})
+    if not available_driver:
+        raise Exception(f"No available drivers found for order {order_id}")
+
+    vehicle_id = available_driver["vehicleId"]
+    driver_id = available_driver["driverId"]
+    print(f"Found available driver: {driver_id} with vehicle: {vehicle_id}")
 
     # 2. Call the ROS API (our mock). This demonstrates integrating heterogeneous systems (REST API).
     ros_payload = {
@@ -82,8 +85,11 @@ async def process_message(channel, method_frame, body):
     # 3. Publish the result back to the orchestrator.
     result_payload = json.dumps({
         "orderId": order_id,
-        "status": "ROUTE_OPTIMIZED", # Status the orchestrator expects
-        "data": route_data
+        "status": "ROUTED",
+        "waypoints": route_data.get("waypoints"),
+        "driverId": driver_id,
+        "vehicleId": vehicle_id,
+        "timestamp": datetime.now(timezone.utc).isoformat()
     })
     channel.basic_publish(exchange='', routing_key=OUTGOING_QUEUE, body=result_payload)
     print(f"Published routing result for Order ID: {order_id}")

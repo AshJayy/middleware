@@ -53,13 +53,7 @@ def simulate_processing(conn, order_id):
     time.sleep(3)
     package_ready = f"{order_id}:READY"
     conn.sendall((package_ready + "\n").encode())
-    print(f"[MOCK-WMS] Sent PACKAGE_READY for order {order_id}")
-
-    # Optional: simulate dispatch event after more time
-    time.sleep(5)
-    dispatched = f"{order_id}:DISPATCHED"
-    conn.sendall((dispatched + "\n").encode())
-    print(f"[MOCK-WMS] Sent PACKAGE_DISPATCHED for order {order_id}")
+    print(f"[MOCK-WMS] Sent READY for order {order_id}")
 
 
 def start_server():
