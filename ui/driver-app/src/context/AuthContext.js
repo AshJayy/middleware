@@ -1,22 +1,61 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { login as loginApi } from '../network/auth'; // Import the login function we just created
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [driver, setDriver] = useState({
-        id: 'D-123', // A hardcoded, fake driver ID for testing
-        name: 'John Driver',
-        email: 'john.driver@swiftlogistics.com'
-    });
+    const [driver, setDriver] = useState(null);
+    const [token, setToken] = useState(localStorage.getItem('driver_token'));
+    const [loading, setLoading] = useState(true);
 
-    // In the future, a real login function would set this object.
-    const value = {
-        driver,
-        // login: (email, password) => { /* Future login logic */ },
-        // logout: () => { /* Future logout logic */ }
+    useEffect(() => {
+        // This effect runs on startup to check if a user is already logged in
+        // from a previous session.
+        const storedDriver = localStorage.getItem('driver_details');
+        if (token && storedDriver) {
+            setDriver(JSON.parse(storedDriver));
+        }
+        setLoading(false);
+    }, [token]);
+
+    const login = async (email, password) => {
+        try {
+            const response = await loginApi(email, password);
+            const { token, user } = response.data;
+
+            // Store the token and user details
+            localStorage.setItem('driver_token', token);
+            localStorage.setItem('driver_details', JSON.stringify(user));
+
+            setToken(token);
+            setDriver(user);
+        } catch (error) {
+            console.error("Login failed:", error);
+            // Handle login errors (e.g., show a message to the user)
+            throw error;
+        }
     };
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+    const logout = () => {
+        localStorage.removeItem('driver_token');
+        localStorage.removeItem('driver_details');
+        setToken(null);
+        setDriver(null);
+    };
+
+    const value = {
+        driver,
+        token,
+        login,
+        logout,
+        isAuthenticated: !!token,
+    };
+
+    return (
+        <AuthContext.Provider value={value}>
+            {!loading && children}
+        </AuthContext.Provider>
+    );
 };
 
 export const useAuth = () => {
