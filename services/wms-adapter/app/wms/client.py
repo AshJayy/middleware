@@ -24,11 +24,14 @@ class WMSClient:
             self.send_order(order_data)
 
     def listen_for_updates(self, callback):
+        print("[WMS-ADAPTER] Listening for wms updates...")
         while True:
             data = self.sock.recv(1024)
+            print(f"[WMS-ADAPTER] Received: {data}")
             if not data:
                 break
             for line in data.decode("utf-8").strip().splitlines():
+                print(f"[WMS-ADAPTER] Received line: {line}")
                 callback(line)
         print("[WMS] Disconnected")
         self.sock.close()

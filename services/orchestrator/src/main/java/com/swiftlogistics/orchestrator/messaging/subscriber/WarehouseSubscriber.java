@@ -34,7 +34,7 @@ public class WarehouseSubscriber {
 
             // Process different warehouse statuses
             switch (warehouseUpdate.getStatus()) {
-                case "PACKAGE_READY" -> handlePackageReady(warehouseUpdate);
+                case "READY" -> handlePackageReady(warehouseUpdate);
                 case "FAILED" -> handleWarehouseFailure(warehouseUpdate);
                 case "PROCESSING" -> handleWarehouseProcessing(warehouseUpdate);
                 default -> log.warn("Unknown warehouse status: {} for orderId: {}", 
