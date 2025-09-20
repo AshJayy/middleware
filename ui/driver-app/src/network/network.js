@@ -12,14 +12,14 @@ const apiClient = axios.create({
 
 // Interceptor to add the authentication token to every request.
 // The driver app will need a login system to get this token.
-apiClient.interceptors.request.use((config) => {
-    const token = localStorage.getItem('driver_token'); // Or however you choose to store the token
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-}, (error) => {
-    return Promise.reject(error);
-});
+// apiClient.interceptors.request.use((config) => {
+//     const token = localStorage.getItem('driver_token'); // Or however you choose to store the token
+//     if (token) {
+//         config.headers.Authorization = `Bearer ${token}`;
+//     }
+//     return config;
+// }, (error) => {
+//     return Promise.reject(error);
+// });
 
 export default apiClient;
