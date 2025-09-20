@@ -4,3 +4,4 @@
 
 .venv
 services/wms-adapter/.env
+services/ros-integration/.env
