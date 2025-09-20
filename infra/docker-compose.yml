@@ -68,7 +68,7 @@ services:
     container_name: swift-ros-integration
     restart: unless-stopped
     ports:
-      - "8004:8000" # Application port
+      - "8004:8004" # Application port
     env_file:
       - ../services/ros-integration/.env
     depends_on:
@@ -88,6 +88,8 @@ services:
       - SERVER_PORT=5001
       - SPRING_APPLICATION_NAME=cms-mock
       - JAVA_OPTS=-Xmx512m -Xms256m
+    networks:
+        - swift-network
 
   cms-adapter:
     build:

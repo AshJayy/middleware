@@ -19,7 +19,7 @@ public class SoapClientConfig {
     @Bean
     public CmsSoapClient cmsSoapClient(Jaxb2Marshaller marshaller) {
         CmsSoapClient client = new CmsSoapClient();
-        client.setDefaultUri("http://localhost:5001/ws");
+        client.setDefaultUri("http://cms-mock-service:5001/ws");
         client.setMarshaller(marshaller);
         client.setUnmarshaller(marshaller);
         return client;
