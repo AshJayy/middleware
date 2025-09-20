@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/v1/orders")
+@RequestMapping("/api/v1/drivers")
 @RequiredArgsConstructor
 @Slf4j
 public class DriverController {
