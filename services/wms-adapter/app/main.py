@@ -24,6 +24,7 @@ def health():
 
 def handle_message(message):
     parsed_mssg = parse_string_to_dict(message)
+    print(f"[WMS-ADAPTER] Parsed WMS message: {parsed_mssg}")
     # publish_to_queue("wms", parsed_mssg)
     rabbitmq_client.publish("warehouse-updates", parsed_mssg)
 

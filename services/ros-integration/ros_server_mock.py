@@ -28,7 +28,7 @@ async def optimize_route(request: RouteRequest):
         "routeId": f"route_{random.randint(1000, 9999)}",
         "orderId": request.orderId,
         "vehicleId": request.vehicleId,
-        "status": "OPTIMIZED",
+        "status": "ROUTED",
         # New 'waypoints' field with mock data
         "waypoints": [
             request.pickup.city,

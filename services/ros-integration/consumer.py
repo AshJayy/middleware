@@ -14,14 +14,23 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://orchestrator:LRg4OV1lEtpA5WMs@
 ROS_API_URL = "http://host.docker.internal:3001/optimize-route"
 
 # --- UPDATED QUEUE NAMES ---
-INCOMING_QUEUE = "route-planning-queue"
-OUTGOING_QUEUE = "route-updates-queue"
+INCOMING_QUEUE = "route-planning"
+incoming_queue_args = {
+    "x-dead-letter-exchange": "route.exchange.dlx",
+    "x-dead-letter-routing-key": "route-planning.dlq"
+}
+OUTGOING_QUEUE = "route-updates"
+outgoing_queue_args = {
+    "x-dead-letter-exchange": "route.exchange.dlx",
+    "x-dead-letter-routing-key": "route-updates.dlq"
+}
 
 # --- Database Connection ---
 client = AsyncIOMotorClient(MONGO_URI)
-db = client['swift-logic'] # Use the correct database name from the URI
+db = client['swift-logic']  # Use the correct database name from the URI
 # --- UPDATED COLLECTION NAME ---
 drivers_collection = db.drivers
+
 
 async def start_consumer():
     """Connects to RabbitMQ and starts the main consumer loop."""
@@ -31,8 +40,8 @@ async def start_consumer():
             connection = pika.BlockingConnection(pika.URLParameters(RABBITMQ_URI))
             channel = connection.channel()
 
-            channel.queue_declare(queue=INCOMING_QUEUE, durable=True)
-            channel.queue_declare(queue=OUTGOING_QUEUE, durable=True)
+            channel.queue_declare(queue=INCOMING_QUEUE, durable=True, arguments=incoming_queue_args)
+            channel.queue_declare(queue=OUTGOING_QUEUE, durable=True, arguments=outgoing_queue_args)
             print(f"RabbitMQ connected. Waiting for messages in '{INCOMING_QUEUE}'")
 
             for method_frame, properties, body in channel.consume(INCOMING_QUEUE):
@@ -41,10 +50,11 @@ async def start_consumer():
                 except Exception as e:
                     print(f"Error processing message: {e}")
                     channel.basic_nack(delivery_tag=method_frame.delivery_tag, requeue=False)
-        
+
         except pika.exceptions.AMQPConnectionError:
             print("Connection to RabbitMQ failed. Retrying in 5 seconds...")
             await asyncio.sleep(5)
+
 
 async def process_message(channel, method_frame, body):
     """Main logic for processing a single order message."""
@@ -66,7 +76,7 @@ async def process_message(channel, method_frame, body):
         "orderId": order_id,
         "vehicleId": vehicle_id,
         "pickup": {
-            "fullAddress": "SwiftLogistics Central Warehouse", # fixed pickup point
+            "fullAddress": "SwiftLogistics Central Warehouse",  # fixed pickup point
             "city": "Colombo",
             "postalCode": "00500"
         },
@@ -79,7 +89,7 @@ async def process_message(channel, method_frame, body):
 
     async with httpx.AsyncClient() as client:
         response = await client.post(ROS_API_URL, json=ros_payload, timeout=15.0)
-        response.raise_for_status() # Raise exception for non-200 responses
+        response.raise_for_status()  # Raise exception for non-200 responses
         route_data = response.json()
 
     # 3. Publish the result back to the orchestrator.

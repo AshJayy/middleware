@@ -6,7 +6,9 @@ class RabbitMQClient:
     def __init__(self):
         print("[RABBITMQ] Initializing RabbitMQ client...")
         self.lock = threading.Lock()
-        self.connection = pika.BlockingConnection(
+
+        # Create a connection only for consuming (persistent)
+        self.consumer_connection = pika.BlockingConnection(
             pika.ConnectionParameters(
                 host=os.getenv("RABBITMQ_HOST", "swift-rabbitmq"),
                 port=int(os.getenv("RABBITMQ_PORT", 5672)),
@@ -16,39 +18,62 @@ class RabbitMQClient:
                 )
             )
         )
-        self.channel = self.connection.channel()
+        self.consumer_channel = self.consumer_connection.channel()
+
+    def _new_publish_channel(self):
+        """Create a short-lived connection + channel just for publishing."""
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                host=os.getenv("RABBITMQ_HOST", "swift-rabbitmq"),
+                port=int(os.getenv("RABBITMQ_PORT", 5672)),
+                credentials=pika.PlainCredentials(
+                    os.getenv("RABBITMQ_USER", "guest"),
+                    os.getenv("RABBITMQ_PASS", "guest")
+                )
+            )
+        )
+        channel = connection.channel()
+        return connection, channel
 
     def publish(self, queue, message):
-        with self.lock:
+        """Publish using a fresh connection to avoid thread issues."""
+        if message["status"] != "READY":
+            print(f"[RABBITMQ] Skipping publish for non-READY status: {message}")
+            return
+        connection, channel = self._new_publish_channel()
+        try:
             queue_args = {
-                "x-dead-letter-exchange": os.getenv("DEAD_LETTER_EXCHANGE", "warehouse.exchange.dlx"),
-                "x-dead-letter-routing-key": os.getenv("DEAD_LETTER_ROUTING_KEY", "warehouse-queue.dlq")
+                "x-dead-letter-exchange":  "warehouse.exchange.dlx",
+                "x-dead-letter-routing-key": "warehouse-updates.dlq"
             }
-            self.channel.queue_declare(queue=queue, durable=True, arguments=queue_args)
-            self.channel.basic_publish(
+            channel.queue_declare(queue=queue, durable=True, arguments=queue_args)
+            channel.basic_publish(
                 exchange="",
                 routing_key=queue,
                 body=json.dumps(message),
                 properties=pika.BasicProperties(delivery_mode=2)
             )
             print(f"[RABBITMQ] Published to {queue}: {message}")
+        finally:
+            channel.close()
+            connection.close()
 
     def consume(self, queue, callback):
-        with self.lock:
-            queue_args = {
-                "x-dead-letter-exchange": os.getenv("DEAD_LETTER_EXCHANGE", "warehouse.exchange.dlx"),
-                "x-dead-letter-routing-key": os.getenv("DEAD_LETTER_ROUTING_KEY", "warehouse-queue.dlq")
-            }
-            self.channel.queue_declare(queue=queue, durable=True, arguments=queue_args)
+        """Consume with a persistent connection/channel in a dedicated thread."""
+        queue_args = {
+            "x-dead-letter-exchange": "warehouse.exchange.dlx",
+            "x-dead-letter-routing-key": "warehouse-queue.dlq"
+        }
+        self.consumer_channel.queue_declare(queue=queue, durable=True, arguments=queue_args)
 
-            def on_message(ch, method, properties, body):
-                callback(json.loads(body.decode()))
-                ch.basic_ack(delivery_tag=method.delivery_tag)
+        def on_message(ch, method, properties, body):
+            callback(json.loads(body.decode()))
+            ch.basic_ack(delivery_tag=method.delivery_tag)
 
-            self.channel.basic_consume(queue=queue, on_message_callback=on_message)
-            print(f"[RABBITMQ] Listening on {queue}...")
-            self.channel.start_consuming()
+        self.consumer_channel.basic_consume(queue=queue, on_message_callback=on_message)
+        print(f"[RABBITMQ] Listening on {queue}...")
+        self.consumer_channel.start_consuming()
 
     def close(self):
-        with self.lock:
-            self.connection.close()
+        if self.consumer_connection and self.consumer_connection.is_open:
+            self.consumer_connection.close()
