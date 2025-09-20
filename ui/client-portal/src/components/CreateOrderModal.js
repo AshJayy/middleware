@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-const initialState = (presaved) => ({
+const initialState = () => ({
   deliveryAddress: '',
   city: '',
   postalCode: '',
   country: '',
-  estimatedDelivery: '',
-  ...presaved
+
 });
 
-const CreateOrderModal = ({ onClose, onCreate, presaved }) => {
-  const [form, setForm] = useState(initialState(presaved));
+const CreateOrderModal = ({ onClose, onCreate }) => {
+  const [form, setForm] = useState(initialState());
+  const [totalAmount, setTotalAmount] = useState((Math.random() * 95 + 5).toFixed(2));
+
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -18,6 +19,10 @@ const CreateOrderModal = ({ onClose, onCreate, presaved }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setForm({
+      totalAmount: totalAmount,
+      ...form
+    })
     onCreate(form);
   };
 
@@ -26,6 +31,10 @@ const CreateOrderModal = ({ onClose, onCreate, presaved }) => {
       <div className="modal">
         <h2 style={{marginTop:0,marginBottom:18,fontWeight:600,fontSize:22,color:'#1e293b'}}>Create New Order</h2>
         <form onSubmit={handleSubmit} className="create-order-form">
+          <div>
+            <span>Total Amount</span>
+            <div style={{fontWeight:600,fontSize:22,color:'#1e293b'}}>USD {totalAmount}</div>
+          </div>
           <label>
             Delivery Address
             <input name="deliveryAddress" value={form.deliveryAddress} onChange={handleChange} required />

@@ -18,16 +18,19 @@ class Network {
     if (data && method.toUpperCase() !== 'GET') {
       options.body = typeof data === 'string' ? data : JSON.stringify(data);
     }
+    console.log(`Request: ${options.method} ${url}`, data || '');
     const res = await fetch(url, options);
     const text = await res.text();
     let json = null;
     try { json = text ? JSON.parse(text) : null; } catch { /* non-JSON */ }
     if (!res.ok) {
-      const err = new Error(json?.message || res.statusText);
+      const err = new Error(json?.message || res.body);
       err.status = res.status;
       err.data = json || text;
+      console.log(`Response: ${res.status} ${res.statusText}`, err.data);
       throw err;
     }
+    console.log(`Response: ${res.status} ${res.statusText}`, json || text);
     return json;
   }
 

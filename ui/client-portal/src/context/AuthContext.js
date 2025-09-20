@@ -7,8 +7,8 @@ export const AuthProvider = ({ children }) => {
   // Persist only in-memory until refresh as requested
   const [customer, setCustomer] = useState(null);
 
-  const signin = useCallback(async (username, password) => {
-    const payload = { username, password };
+  const signin = useCallback(async (customerName, password) => {
+    const payload = { username: customerName, password };
     const res = await authEndpoints.signin(payload);
     // Support either { customer: {...} } or the customer object directly
     const cust = res?.customer ?? res ?? null;
@@ -40,4 +40,3 @@ export const useAuth = () => {
 };
 
 export default AuthContext;
-

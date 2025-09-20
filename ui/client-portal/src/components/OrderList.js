@@ -7,12 +7,12 @@ const OrderList = ({ orders, onSelect, selectedOrder, getStatusColor, getStatusI
     <ul>
       {orders.map(order => (
         <li
-          key={order.id}
-          className={selectedOrder && selectedOrder.id === order.id ? 'selected' : ''}
+          key={order.orderId}
+          className={selectedOrder && selectedOrder.orderId === order.orderId ? 'selected' : ''}
           onClick={() => onSelect(order)}
         >
           <div className="order-list-item">
-            <span className="order-id">{order.id}</span>
+            <span className="order-id">{order.orderId?.toString().slice(0, 8)}</span>
             <StatusBadge status={order.status} getStatusColor={getStatusColor} getStatusIcon={getStatusIcon} formatStatus={formatStatus} />
           </div>
           <div className="order-address">{order.deliveryAddress}</div>

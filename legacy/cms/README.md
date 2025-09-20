@@ -17,8 +17,8 @@ docker-compose down
 
 ## Endpoints
 
-- **SOAP Service:** http://localhost:5000/ws
-- **WSDL:** http://localhost:5000/ws/orders.wsdl
+- **SOAP Service:** http://localhost:5001/ws
+- **WSDL:** http://localhost:5001/ws/orders.wsdl
 
 ## Test Request
 

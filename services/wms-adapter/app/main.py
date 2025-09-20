@@ -32,8 +32,6 @@ def process_order(message):
     wms_client.send_order(parsed_order)
 
 
-# if __name__ == "__main__":
-@app.on_event("startup")
 def start_wms_listener():
     wms_listener = threading.Thread(target=wms_client.listen_for_updates, args=(handle_message, ))
     wms_listener.daemon = True
@@ -43,5 +41,12 @@ def start_wms_listener():
     consumer.daemon = True
     consumer.start()
 
-    # import uvicorn
-    # uvicorn.run(app, host="0.0.0.0", port=8003)
+@app.on_event("startup")
+def startup_event():
+    start_wms_listener()
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8003)
+    # start_wms_listener()

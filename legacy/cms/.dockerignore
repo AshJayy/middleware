@@ -1,7 +1,23 @@
-# Simple Docker ignore
-.git
-.idea
-*.md
-Dockerfile
-.dockerignore
-docker-compose.yml
+# Default ignore everything, then whitelist what's needed by the Dockerfile
+**
+!Dockerfile
+!mvnw
+!mvnw.cmd
+!pom.xml
+!.mvn/
+!.mvn/**
+!src/
+!src/**
+
+# Re-exclude local build and tooling artefacts
+target/
+.target/
+.idea/
+.vscode/
+.DS_Store
+.git/
+.gitignore
+node_modules/
+.env
+*.log
+

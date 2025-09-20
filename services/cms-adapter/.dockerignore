@@ -1,7 +1,0 @@
-# Simple Docker ignore
-.git
-.idea
-*.md
-Dockerfile
-.dockerignore
-docker-compose.yml
