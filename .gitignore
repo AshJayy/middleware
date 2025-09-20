@@ -3,4 +3,5 @@
 *.ssh
 
 .venv
-services/wms-adapter/.env
+services/wms-adapter/app/.env
+services/ros-integration/.env

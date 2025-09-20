@@ -33,7 +33,7 @@ docker build -t wms-adapter .
 Run the Docker container:
 ```bash
 docker run --name wms-adapter \
- --env-file <path> \
+ --env-file ./app/.env \
  -d -p 8003:8003 \
  wms-adapter
 ```

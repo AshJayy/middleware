@@ -2,9 +2,10 @@
 import socket
 import threading
 import time
+import os
 
-HOST = "localhost"
-PORT = 9000
+HOST = os.getenv("HOST", "0.0.0.0")  # Use 0.0.0.0 for Docker, allow override
+PORT = int(os.getenv("PORT", 9000))
 
 orders_received = []
 
