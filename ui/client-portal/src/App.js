@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './AppStyles.css';
 import OrderList from './components/OrderList';
 import OrderDetails from './components/OrderDetails';
@@ -7,6 +7,7 @@ import NotificationList from './components/NotificationList';
 import UserProfile from './components/UserProfile';
 import CreateOrderModal from './components/CreateOrderModal';
 import SignInModal from './components/SignInModal';
+import SignUpModal from './components/SignUpModal';
 import { useAuth } from './context/AuthContext';
 import { orderEndpoints } from './network/order';
 import { Package, Clock, Truck, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
@@ -50,8 +51,9 @@ const ClientPortal = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCreateOrder, setShowCreateOrder] = useState(false);
   const [showSignIn, setShowSignIn] = useState(false);
+  const [showSignUp, setShowSignUp] = useState(false);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       const id = getCustomerId();
       if (!id) return;
@@ -61,22 +63,23 @@ const ClientPortal = () => {
     } catch (e) {
       console.error('Failed to fetch orders', e);
     }
-  };
+  }, [getCustomerId]);
 
   useEffect(() => {
     if (isAuthenticated) {
       fetchOrders();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchOrders]);
 
-  const handleCreateOrder = (orderData) => {
+  const handleCreateOrder = async (orderData) => {
     const newOrder = {
+      ...orderData,
       customerId: getCustomerId() || undefined,
       status: 'PENDING',
       estimatedDelivery: orderData.estimatedDelivery || '',
-      ...orderData
     };
-    setOrders([newOrder, ...orders]);
+    const createdOrder = await orderEndpoints.createOrder(newOrder);
+    setOrders([createdOrder, ...orders]);
     setShowCreateOrder(false);
   };
 
@@ -103,7 +106,10 @@ const ClientPortal = () => {
                 </button>
               </>
             ) : (
-              <button className="create-order-btn" onClick={() => setShowSignIn(true)}>Sign In</button>
+              <>
+                <button className="create-order-btn" onClick={() => setShowSignIn(true)}>Sign In</button>
+                <button className="create-order-btn" onClick={() => setShowSignUp(true)}>Sign Up</button>
+              </>
             )}
             <button className="create-order-btn" onClick={() => setShowCreateOrder(true)}>
               + Create Order
@@ -141,12 +147,15 @@ const ClientPortal = () => {
             items: ['General Package'],
             status: 'PENDING',
             estimatedDelivery: '',
-            createdAt: new Date().toISOString().slice(0, 16).replace('T', ' ')
+            createdAt: new Date().toISOString().slice(0, 16)
           }}
         />
       )}
       {showSignIn && (
         <SignInModal onClose={() => setShowSignIn(false)} />
+      )}
+      {showSignUp && (
+        <SignUpModal onClose={() => setShowSignUp(false)} />
       )}
     </div>
   );

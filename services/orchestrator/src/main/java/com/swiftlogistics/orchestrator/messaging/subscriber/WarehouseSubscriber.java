@@ -32,14 +32,28 @@ public class WarehouseSubscriber {
             log.info("Received warehouse update: orderId={}, status={}",
                     warehouseUpdate.getOrderId(), warehouseUpdate.getStatus());
 
-            // Process different warehouse statuses
-            switch (warehouseUpdate.getStatus()) {
-                case "PACKAGE_READY" -> handlePackageReady(warehouseUpdate);
-                case "FAILED" -> handleWarehouseFailure(warehouseUpdate);
-                case "PROCESSING" -> handleWarehouseProcessing(warehouseUpdate);
-                default -> log.warn("Unknown warehouse status: {} for orderId: {}", 
-                        warehouseUpdate.getStatus(), warehouseUpdate.getOrderId());
-            }
+//            String status = warehouseUpdate.getStatus() != null ? warehouseUpdate.getStatus().trim().toUpperCase() : "";
+//
+//            log.info("test logz");
+//
+//            log.info("Normalized warehouse status: '{}', codepoints={}",
+//                status, status.chars()
+//                    .mapToObj(c -> String.format("\\u%04X", c))
+//                    .toList());
+//
+//
+//            // Process different warehouse statuses
+//            switch (status) {
+//                case "READY" -> handlePackageReady(warehouseUpdate);
+//                case "FAILED" -> handleWarehouseFailure(warehouseUpdate);
+//                case "PROCESSING" -> handleWarehouseProcessing(warehouseUpdate);
+//                default -> log.warn("Unknown warehouse status: {} for orderId: {}, codepoints: {}",
+//                        warehouseUpdate.getStatus(), warehouseUpdate.getOrderId(),
+//                        status.chars().mapToObj(c -> String.format("\\u%04X", c)).toList()
+//                );
+//            }
+
+            handlePackageReady(warehouseUpdate);
 
         } catch (Exception e) {
             log.error("Error processing warehouse update: orderId={}",

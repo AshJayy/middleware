@@ -5,14 +5,14 @@ export const orderEndpoints = {
     return await NETWORK.post('/orders', data)
   },
   async getOrders(customerId) {
-    return await NETWORK.get(`/orders/${customerId}`)
+    return await NETWORK.get(`/orders/customer/${customerId}`)
   },
   async getDriver(driverId) {
     return await NETWORK.get(`/drivers/${driverId}`)
   },
 
   async trackOrder(orderId) {
-    const url = `${NETWORK.baseURL}/sse/order/${orderId}`;
+    const url = `http://localhost:8000/sse/order/${orderId}`;
     if (typeof (EventSource) !== "undefined") {
       const source = new EventSource(url);
       source.onmessage = function (event) {

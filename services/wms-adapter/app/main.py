@@ -5,13 +5,15 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 
 from wms.mssg_parser import parse_string_to_dict, parse_dict_to_string
-from queue.client import RabbitMQClient
+from rabbitmq.client import RabbitMQClient
 from wms.client import WMSClient
 
 wms_client = WMSClient()
 rabbitmq_client = RabbitMQClient()
 
-load_dotenv()
+# TODO: secure the .env file
+dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(dotenv_path)
 
 app = FastAPI()
 
@@ -22,6 +24,7 @@ def health():
 
 def handle_message(message):
     parsed_mssg = parse_string_to_dict(message)
+    print(f"[WMS-ADAPTER] Parsed WMS message: {parsed_mssg}")
     # publish_to_queue("wms", parsed_mssg)
     rabbitmq_client.publish("warehouse-updates", parsed_mssg)
 
@@ -30,11 +33,7 @@ def process_order(message):
     wms_client.send_order(parsed_order)
 
 
-# if __name__ == "__main__":
-@app.on_event("startup")
 def start_wms_listener():
-    host = os.getenv("WMS_TCP_HOST")
-    port = int(os.getenv("WMS_TCP_PORT"))
     wms_listener = threading.Thread(target=wms_client.listen_for_updates, args=(handle_message, ))
     wms_listener.daemon = True
     wms_listener.start()
@@ -43,5 +42,12 @@ def start_wms_listener():
     consumer.daemon = True
     consumer.start()
 
+@app.on_event("startup")
+def startup_event():
+    start_wms_listener()
+
+
+if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8003)
+    # start_wms_listener()

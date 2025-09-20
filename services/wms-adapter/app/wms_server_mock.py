@@ -2,11 +2,13 @@
 import socket
 import threading
 import time
+import os
 
-HOST = "localhost"
-PORT = 9000
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", 9000))
 
 orders_received = []
+
 
 def handle_client(conn, addr):
     print(f"[MOCK-WMS] Connected by {addr}")
@@ -14,12 +16,6 @@ def handle_client(conn, addr):
         while True:
             try:
                 data = conn.recv(1024)
-
-                # TODO: Implement a proper shutdown mechanism
-                # if data.decode().strip() == "close":
-                #     print("[MOCK-WMS] Client requested to close connection.")
-                #     break
-
                 if not data:
                     print("[MOCK-WMS] No data received. Closing connection.")
                     break
@@ -28,16 +24,14 @@ def handle_client(conn, addr):
                     line = line.strip()
                     if not line:
                         continue
-                    # Expecting format: ORD345:SHIPPED
                     if ':' in line:
                         order_id, event = line.split(':', 1)
                         order_id = order_id.strip('"')
                         orders_received.append(line)
                         print(f"[MOCK-WMS] Received order: {line}")
-                        # Simulate warehouse processing
                         threading.Thread(
                             target=simulate_processing,
-                            args=(conn, order_id),
+                            args=(conn, order_id, line),
                             daemon=True
                         ).start()
                     else:
@@ -47,18 +41,16 @@ def handle_client(conn, addr):
                 break
 
 
-def simulate_processing(conn, order_id):
-    # Simulate time taken to process
+def simulate_processing(conn, order_id, original_line):
     time.sleep(3)
-    package_ready = f"{order_id}:READY"
-    conn.sendall((package_ready + "\n").encode())
-    print(f"[MOCK-WMS] Sent PACKAGE_READY for order {order_id}")
-
-    # Optional: simulate dispatch event after more time
-    time.sleep(5)
-    dispatched = f"{order_id}:DISPATCHED"
-    conn.sendall((dispatched + "\n").encode())
-    print(f"[MOCK-WMS] Sent PACKAGE_DISPATCHED for order {order_id}")
+    messages = [f"{order_id}:READY", original_line]
+    for msg in messages:
+        try:
+            conn.sendall((msg + "\n").encode())
+            print(f"[MOCK-WMS] Sent: {msg}")
+        except (BrokenPipeError, OSError):
+            print("[MOCK-WMS] Failed to send data back. Connection might be closed.")
+            break
 
 
 def start_server():

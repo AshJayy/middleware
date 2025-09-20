@@ -11,6 +11,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY app/ ./
 
+# Copy entrypoint script
+COPY entrypoint.sh ./
+RUN chmod +x entrypoint.sh
+
 # Expose the FastAPI port
 EXPOSE 8003
 
@@ -18,4 +22,4 @@ EXPOSE 8003
 ENV PYTHONUNBUFFERED=1
 
 # Run app
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003"]
+ENTRYPOINT ["./entrypoint.sh"]

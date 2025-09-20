@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
 @Slf4j
 @CrossOrigin(origins = "*")
@@ -23,9 +23,15 @@ public class AuthController {
   private final CustomerRepository customerRepository;
   private final DriverRepository driverRepository;
 
-//  Mock Auth functionality
+  //  Mock Auth functionality
   @PostMapping("/customer")
   public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+    if (loginRequest.getUsername() == null || loginRequest.getUsername().isEmpty()) {
+      return ResponseEntity.status(400).body("Customer name is required");
+    }
+    if (loginRequest.getPassword() == null || loginRequest.getPassword().isEmpty()) {
+      return ResponseEntity.status(400).body("Password is required");
+    }
     Customer customer = customerRepository.findCustomerByCustomerName(loginRequest.getUsername());
     if (customer == null) {
       return ResponseEntity.status(401).body("Customer not found");
@@ -54,12 +60,18 @@ public class AuthController {
   }
 
   @PostMapping("/sign-up")
-    public ResponseEntity<?> signUp(@RequestBody Customer customer) {
-        if (customerRepository.findCustomerByCustomerName(customer.getCustomerName()) != null) {
-        return ResponseEntity.status(400).body("Customer already exists");
-        }
-        Customer savedCustomer = customerRepository.save(customer);
-        savedCustomer.setPassword(null);
-        return ResponseEntity.ok(savedCustomer);
+  public ResponseEntity<?> signUp(@RequestBody Customer customer) {
+    if (customer.getCustomerName() == null || customer.getCustomerName().isEmpty()) {
+      return ResponseEntity.status(400).body("Customer name is required");
     }
+    if (customer.getPassword() == null || customer.getPassword().isEmpty()) {
+      return ResponseEntity.status(400).body("Password is required");
+    }
+    if (customerRepository.findCustomerByCustomerName(customer.getCustomerName()) != null) {
+      return ResponseEntity.status(400).body("Customer already exists");
+    }
+    Customer savedCustomer = customerRepository.save(customer);
+    savedCustomer.setPassword(null);
+    return ResponseEntity.ok(savedCustomer);
+  }
 }

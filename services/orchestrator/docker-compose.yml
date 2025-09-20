@@ -41,7 +41,7 @@ services:
       MONGODB_URI: mongodb://host.docker.internal:27017/cmsdb
 
       # RabbitMQ Configuration (connecting to rabbitmq container)
-      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_HOST: swift-rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: guest
       RABBITMQ_PASSWORD: guest
