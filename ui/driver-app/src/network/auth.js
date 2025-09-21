@@ -27,3 +27,12 @@ export const signup = (driver) => {
     // }
     return apiClient.post('/auth/driver-sign-up', driver);
 };
+
+/**
+ * Logs out the currently authenticated driver.
+ *
+ * @returns {Promise<object>} A promise that resolves to the logout response.
+ */
+export const logout = () => {
+    return apiClient.post('/driver-logout');
+};

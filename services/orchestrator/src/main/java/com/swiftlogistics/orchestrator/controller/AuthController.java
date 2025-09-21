@@ -55,8 +55,31 @@ public class AuthController {
       return ResponseEntity.ok("Invalid password");
     }
 
+    driver.setAvailable(true);
+
+    driverRepository.save(driver);
+
     driver.setPassword(null);
     return ResponseEntity.ok(driver);
+  }
+
+  @PostMapping("/driver-logout")
+  public ResponseEntity<?> driverLogout(@RequestBody LoginRequest loginRequest) {
+    Driver driver = driverRepository.findDriverByDriverName(loginRequest.getUsername());
+    // Mock driver authentication logic
+    if (driver == null) {
+      return ResponseEntity.status(401).body("Driver not found");
+    }
+    if (!driver.getPassword().equals(loginRequest.getPassword())) {
+      return ResponseEntity.ok("Invalid password");
+    }
+
+    driver.setAvailable(false);
+
+    driverRepository.save(driver);
+
+    driver.setPassword(null);
+    return ResponseEntity.ok("Logged out successfully");
   }
 
   @PostMapping("/sign-up")

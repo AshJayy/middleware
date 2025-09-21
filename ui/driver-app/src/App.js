@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthPage from './components/AuthPage';
 import NextDeliveryCard from './components/NextDeliveryCard';
@@ -7,56 +7,22 @@ import CurrentLocationCard from './components/CurrentLocationCard';
 import StatusUpdateModal from './components/StatusUpdateModal';
 import { Truck, AlertTriangle } from 'lucide-react';
 import './AppStyles.css';
+import { getAssignedOrders } from './network/driver';
 
 const MainDriverApp = () => {
   const { driver, logout } = useAuth();
   const [currentLocation, setCurrentLocation] = useState('Colombo 03, Sri Lanka');
-  const [deliveries, setDeliveries] = useState([
-    {
-      id: 'ORD-12345',
-      customerId: 'CUST-001',
-      customerName: 'John Doe',
-      customerPhone: '+94 71 234 5678',
-      pickupAddress: 'Warehouse A, Colombo 01',
-      deliveryAddress: '123 Galle Road, Colombo 03',
-      items: ['Electronics Package', 'Documents'],
-      status: 'ASSIGNED',
-      priority: 'HIGH',
-      estimatedTime: '30 mins',
-      distance: '5.2 km',
-      notes: 'Handle with care - fragile items'
-    },
-    {
-      id: 'ORD-12348',
-      customerId: 'CUST-002',
-      customerName: 'Priya Fernando',
-      customerPhone: '+94 76 987 6543',
-      pickupAddress: 'Warehouse A, Colombo 01',
-      deliveryAddress: '456 Wellawatta Road, Colombo 06',
-      items: ['Food Package'],
-      status: 'ASSIGNED',
-      priority: 'MEDIUM',
-      estimatedTime: '45 mins',
-      distance: '7.8 km',
-      notes: 'Perishable goods - deliver ASAP'
-    },
-    {
-      id: 'ORD-12349',
-      customerId: 'CUST-003',
-      customerName: 'Rajesh Kumar',
-      customerPhone: '+94 70 555 7890',
-      pickupAddress: 'Warehouse B, Dehiwala',
-      deliveryAddress: '789 Galle Road, Mount Lavinia',
-      items: ['Medical Supplies', 'Prescription'],
-      status: 'COMPLETED',
-      priority: 'HIGH',
-      estimatedTime: 'Completed',
-      distance: '3.1 km',
-      notes: 'Delivered successfully at 14:30'
-    }
-  ]);
+  const [deliveries, setDeliveries] = useState([]);
   const [selectedDelivery, setSelectedDelivery] = useState(null);
   const [showStatusUpdate, setShowStatusUpdate] = useState(false);
+
+  useEffect(() => {
+    if (driver?.driverId) {
+      getAssignedOrders(driver.driverId)
+        .then(data => setDeliveries(data || []))
+        .catch(() => setDeliveries([]));
+    }
+  }, [driver]);
 
   const nextDelivery = deliveries.find(d => d.status === 'ASSIGNED');
   const completedCount = deliveries.filter(d => d.status === 'COMPLETED').length;

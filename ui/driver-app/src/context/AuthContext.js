@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { login as loginApi, signup as signupApi } from '../network/auth'; // Import the login and signup functions
+import { login as loginApi, signup as signupApi, logout as logoutApi } from '../network/auth'; // Import the login, signup, and logout functions
 
 const AuthContext = createContext();
 
@@ -51,7 +51,12 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = () => {
+    const logout = async () => {
+        try {
+            await logoutApi();
+        } catch (e) {
+            console.log("Logout failed:", e);
+        }
         localStorage.removeItem('driver_token');
         localStorage.removeItem('driver_details');
         setToken(null);
