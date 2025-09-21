@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { login as loginApi } from '../network/auth'; // Import the login function we just created
+import { login as loginApi, signup as signupApi } from '../network/auth'; // Import the login and signup functions
 
 const AuthContext = createContext();
 
@@ -20,8 +20,9 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const response = await loginApi(email, password);
-            const { token, user } = response.data;
+            const user = await loginApi(email, password);
+            console.log("user:", user);
+            const token = user.driverId;
 
             // Store the token and user details
             localStorage.setItem('driver_token', token);
@@ -32,6 +33,20 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             console.error("Login failed:", error);
             // Handle login errors (e.g., show a message to the user)
+            throw error;
+        }
+    };
+
+    const signup = async (driver) => {
+        try {
+            const response = await signupApi(driver);
+            // Optionally auto-login after signup:
+            const user = response.data;
+            localStorage.setItem('driver_details', JSON.stringify(user.driverId));
+            setToken(user);
+            setDriver(user);
+        } catch (error) {
+            console.error("Signup failed:", error);
             throw error;
         }
     };
@@ -48,6 +63,7 @@ export const AuthProvider = ({ children }) => {
         token,
         login,
         logout,
+        signup,
         isAuthenticated: !!token,
     };
 

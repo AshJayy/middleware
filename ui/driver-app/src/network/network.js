@@ -1,25 +1,48 @@
-import axios from 'axios';
+// Simple Network client using fetch with baseURL and optional port
+class Network {
+  constructor(baseURL, port) {
+    this.baseURL = baseURL;
+    this.port = port;
+  }
 
-// The base URL for all API requests, pointing to your orchestrator service.
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+  buildUrl(endpoint) {
+    return `${this.baseURL}${endpoint}`;
+  }
 
-const apiClient = axios.create({
-    baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
-});
+  async request(method, endpoint, data, headers = {}) {
+    const url = this.buildUrl(endpoint);
+    const options = {
+      method: method.toUpperCase(),
+      headers: { 'Content-Type': 'application/json', ...headers },
+    };
+    if (data && method.toUpperCase() !== 'GET') {
+      options.body = typeof data === 'string' ? data : JSON.stringify(data);
+    }
+    console.log(`Request: ${options.method} ${url}`, data || '');
+    const res = await fetch(url, options);
+    const text = await res.text();
+    let json = null;
+    try { json = text ? JSON.parse(text) : null; } catch { /* non-JSON */ }
+    if (!res.ok) {
+      const err = new Error(json?.message || res.body);
+      err.status = res.status;
+      err.data = json || text;
+      console.log(`Response: ${res.status} ${res.statusText}`, err.data);
+      throw err;
+    }
+    console.log(`Response: ${res.status} ${res.statusText}`, json || text);
+    return json;
+  }
 
-// Interceptor to add the authentication token to every request.
-// The driver app will need a login system to get this token.
-// apiClient.interceptors.request.use((config) => {
-//     const token = localStorage.getItem('driver_token'); // Or however you choose to store the token
-//     if (token) {
-//         config.headers.Authorization = `Bearer ${token}`;
-//     }
-//     return config;
-// }, (error) => {
-//     return Promise.reject(error);
-// });
+  get(endpoint, headers) { return this.request('GET', endpoint, undefined, headers); }
+  post(endpoint, data, headers) { return this.request('POST', endpoint, data, headers); }
+  put(endpoint, data, headers) { return this.request('PUT', endpoint, data, headers); }
+  delete(endpoint, data, headers) { return this.request('DELETE', endpoint, data, headers); }
+}
+
+const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api/v1';
+const PORT = undefined;
+
+const apiClient = new Network(BASE_URL, PORT);
 
 export default apiClient;
