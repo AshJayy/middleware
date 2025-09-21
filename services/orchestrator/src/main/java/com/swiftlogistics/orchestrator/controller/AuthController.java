@@ -55,8 +55,31 @@ public class AuthController {
       return ResponseEntity.ok("Invalid password");
     }
 
+    driver.setAvailable(true);
+
+    driverRepository.save(driver);
+
     driver.setPassword(null);
     return ResponseEntity.ok(driver);
+  }
+
+  @PostMapping("/driver-logout")
+  public ResponseEntity<?> driverLogout(@RequestBody LoginRequest loginRequest) {
+    Driver driver = driverRepository.findDriverByDriverName(loginRequest.getUsername());
+    // Mock driver authentication logic
+    if (driver == null) {
+      return ResponseEntity.status(401).body("Driver not found");
+    }
+    if (!driver.getPassword().equals(loginRequest.getPassword())) {
+      return ResponseEntity.ok("Invalid password");
+    }
+
+    driver.setAvailable(false);
+
+    driverRepository.save(driver);
+
+    driver.setPassword(null);
+    return ResponseEntity.ok("Logged out successfully");
   }
 
   @PostMapping("/sign-up")
@@ -73,5 +96,21 @@ public class AuthController {
     Customer savedCustomer = customerRepository.save(customer);
     savedCustomer.setPassword(null);
     return ResponseEntity.ok(savedCustomer);
+  }
+
+  @PostMapping("/driver-sign-up")
+  public ResponseEntity<?> driverSignUp(@RequestBody Driver driver) {
+    if (driver.getDriverName() == null || driver.getDriverName().isEmpty()) {
+      return ResponseEntity.status(400).body("Driver name is required");
+    }
+    if (driver.getPassword() == null || driver.getPassword().isEmpty()) {
+      return ResponseEntity.status(400).body("Password is required");
+    }
+    if (driverRepository.findDriverByDriverName(driver.getDriverName()) != null) {
+      return ResponseEntity.status(400).body("Driver already exists");
+    }
+    Driver token = driverRepository.save(driver);
+    token.setPassword(null);
+    return ResponseEntity.ok(token);
   }
 }

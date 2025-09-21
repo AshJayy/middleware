@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 RABBITMQ_URI = os.getenv("RABBITMQ_URI", "amqp://guest:guest@rabbitmq:5672/")
 MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://orchestrator:LRg4OV1lEtpA5WMs@main.wgytsql.mongodb.net/swift-logic")
 # This special URL points from inside a Docker container to your host machine.
-ROS_API_URL = "http://host.docker.internal:3001/optimize-route"
+ROS_API_URL = "http://localhost:3001/optimize-route" #On docker wms runs in the same container as wms-adapter, so localhost is fine
 
 # --- UPDATED QUEUE NAMES ---
 INCOMING_QUEUE = "route-planning"
@@ -64,11 +64,13 @@ async def process_message(channel, method_frame, body):
 
     # 1. Find an available driver from the 'drivers' collection.
     available_driver = await drivers_collection.find_one({"isAvailable": True})
+
     if not available_driver:
         raise Exception(f"No available drivers found for order {order_id}")
-
+    else:
+        print("Available driver:", available_driver)
     vehicle_id = available_driver["vehicleId"]
-    driver_id = available_driver["driverId"]
+    driver_id = str(available_driver["_id"])
     print(f"Found available driver: {driver_id} with vehicle: {vehicle_id}")
 
     # 2. Call the ROS API (our mock). This demonstrates integrating heterogeneous systems (REST API).
@@ -92,6 +94,8 @@ async def process_message(channel, method_frame, body):
         response.raise_for_status()  # Raise exception for non-200 responses
         route_data = response.json()
 
+        print(f"ROS API response: {route_data}")
+
     # 3. Publish the result back to the orchestrator.
     result_payload = json.dumps({
         "orderId": order_id,
@@ -99,7 +103,7 @@ async def process_message(channel, method_frame, body):
         "waypoints": route_data.get("waypoints"),
         "driverId": driver_id,
         "vehicleId": vehicle_id,
-        "timestamp": datetime.now(timezone.utc).isoformat()
+       "timestamp": datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     })
     channel.basic_publish(exchange='', routing_key=OUTGOING_QUEUE, body=result_payload)
     print(f"Published routing result for Order ID: {order_id}")

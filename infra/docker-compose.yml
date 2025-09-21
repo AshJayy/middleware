@@ -120,6 +120,17 @@ services:
     networks:
       - swift-network
 
+  driver-app:
+    build:
+      context: ../ui/driver-app
+      dockerfile: Dockerfile
+    container_name: swift-driver-app
+    restart: unless-stopped
+    ports:
+      - "3001:3001" # Application port
+    networks:
+      - swift-network
+
 
 # Named volumes for data persistence
 volumes:

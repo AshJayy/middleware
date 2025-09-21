@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { login as loginApi } from '../network/auth'; // Import the login function we just created
+import { login as loginApi, signup as signupApi, logout as logoutApi } from '../network/auth'; // Import the login, signup, and logout functions
 
 const AuthContext = createContext();
 
@@ -20,8 +20,9 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (email, password) => {
         try {
-            const response = await loginApi(email, password);
-            const { token, user } = response.data;
+            const user = await loginApi(email, password);
+            console.log("user:", user);
+            const token = user.driverId;
 
             // Store the token and user details
             localStorage.setItem('driver_token', token);
@@ -36,7 +37,26 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = () => {
+    const signup = async (driver) => {
+        try {
+            const response = await signupApi(driver);
+            // Optionally auto-login after signup:
+            const user = response.data;
+            localStorage.setItem('driver_details', JSON.stringify(user.driverId));
+            setToken(user);
+            setDriver(user);
+        } catch (error) {
+            console.error("Signup failed:", error);
+            throw error;
+        }
+    };
+
+    const logout = async () => {
+        try {
+            await logoutApi();
+        } catch (e) {
+            console.log("Logout failed:", e);
+        }
         localStorage.removeItem('driver_token');
         localStorage.removeItem('driver_details');
         setToken(null);
@@ -48,6 +68,7 @@ export const AuthProvider = ({ children }) => {
         token,
         login,
         logout,
+        signup,
         isAuthenticated: !!token,
     };
 
