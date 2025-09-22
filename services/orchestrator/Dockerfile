@@ -1,25 +1,20 @@
-# Use a lightweight OpenJDK image
-FROM eclipse-temurin:21-jre
-
-# Set working directory
+# dockerfile
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
 WORKDIR /app
 
-# Install curl for health checks
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+COPY pom.xml mvnw mvnw.cmd ./
+COPY .mvn/ .mvn/
+RUN chmod +x mvnw
+RUN ./mvnw -B -q dependency:go-offline
 
-# Copy the JAR file
-COPY target/orchestrator-0.0.1-SNAPSHOT.jar app.jar
+COPY src/ ./src/
+# Run full build with CXF codegen
+RUN ./mvnw -B clean package -DskipTests
 
-# Create non-root user for security
-RUN addgroup --system spring && adduser --system spring --ingroup spring
-USER spring:spring
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY --from=builder /app/target/*.jar app.jar
 
-# Expose port
+ENV SERVER_PORT=8000
 EXPOSE 8000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8000/api/v1/orders/health || exit 1
-
-# Run the application
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar app.jar"]

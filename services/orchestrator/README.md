@@ -7,9 +7,10 @@ This service acts as the central coordination hub for the Swift Logistics platfo
 ## Prerequisites
 
 - Java 21+
-- Maven 3.6+
 - MongoDB (running on localhost:27017 or cloud instance)
 - RabbitMQ (running on localhost:5672)
+
+Note: Maven is not required as the project uses Maven Wrapper (`mvnw`/`mvnw.cmd`) which is included in the repository.
 
 ## How to Run
 
@@ -26,13 +27,13 @@ Update the `.env` file with your specific configuration values.
 Build the application:
 
 ```bash
-mvn clean package -DskipTests
+./mvnw clean package -DskipTests
 ```
 
 Run the application:
 
 ```bash
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
 Or run the JAR file:
@@ -46,7 +47,12 @@ java -jar target/orchestrator-0.0.1-SNAPSHOT.jar
 Build the Docker image:
 
 ```bash
-mvn clean package -DskipTests
+docker build -t orchestrator .
+```
+
+Or build with Docker Compose:
+
+```bash
 docker-compose build orchestrator
 ```
 
@@ -55,6 +61,12 @@ Run with Docker Compose:
 ```bash
 docker-compose up -d
 ```
+
+The Docker image uses a multi-stage build process:
+
+- **Build stage**: Uses `maven:3.9.9-eclipse-temurin-21` to compile the application with Maven Wrapper
+- **Runtime stage**: Uses `eclipse-temurin:21-jre-alpine` for a lightweight production image
+- **JVM Options**: Set the `JAVA_OPTS` environment variable to pass additional JVM parameters
 
 ## What Happens
 
@@ -135,35 +147,35 @@ src/
 
 ### Order Management
 
-| Method | Endpoint                               | Description                    |
-| ------ | -------------------------------------- | ------------------------------ |
-| `POST` | `/api/v1/orders`                       | Create new order               |
-| `GET`  | `/api/v1/orders/{orderId}`             | Get order details              |
+| Method | Endpoint                               | Description                      |
+| ------ | -------------------------------------- | -------------------------------- |
+| `POST` | `/api/v1/orders`                       | Create new order                 |
+| `GET`  | `/api/v1/orders/{orderId}`             | Get order details                |
 | `GET`  | `/api/v1/orders/customer/{customerId}` | Get orders for specific customer |
-| `GET`  | `/api/v1/orders/{orderId}/events`      | Get order audit trail          |
-| `GET`  | `/api/v1/orders/health`                | Service health check           |
+| `GET`  | `/api/v1/orders/{orderId}/events`      | Get order audit trail            |
+| `GET`  | `/api/v1/orders/health`                | Service health check             |
 
 ### Driver Management
 
-| Method | Endpoint                              | Description                    |
-| ------ | ------------------------------------- | ------------------------------ |
-| `GET`  | `/api/v1/orders/driver/{driverId}`    | Get pending orders for driver  |
-| `GET`  | `/api/v1/orders/driver/{orderId}`     | Get order details for driver   |
-| `PUT`  | `/api/v1/orders/driver/start/{orderId}` | Start delivery for order     |
-| `PUT`  | `/api/v1/orders/driver/complete/{orderId}` | Complete delivery for order |
+| Method | Endpoint                                   | Description                   |
+| ------ | ------------------------------------------ | ----------------------------- |
+| `GET`  | `/api/v1/orders/driver/{driverId}`         | Get pending orders for driver |
+| `GET`  | `/api/v1/orders/driver/{orderId}`          | Get order details for driver  |
+| `PUT`  | `/api/v1/orders/driver/start/{orderId}`    | Start delivery for order      |
+| `PUT`  | `/api/v1/orders/driver/complete/{orderId}` | Complete delivery for order   |
 
 ### Authentication
 
-| Method | Endpoint           | Description          |
-| ------ | ------------------ | -------------------- |
-| `POST` | `/api/auth/customer` | Customer login     |
-| `POST` | `/api/auth/driver`   | Driver login       |
+| Method | Endpoint             | Description    |
+| ------ | -------------------- | -------------- |
+| `POST` | `/api/auth/customer` | Customer login |
+| `POST` | `/api/auth/driver`   | Driver login   |
 
 ### Real-time Updates (Server-Sent Events)
 
-| Method | Endpoint                    | Description                        |
-| ------ | --------------------------- | ---------------------------------- |
-| `GET`  | `/sse/order/{orderId}`      | Subscribe to real-time order updates |
+| Method | Endpoint               | Description                          |
+| ------ | ---------------------- | ------------------------------------ |
+| `GET`  | `/sse/order/{orderId}` | Subscribe to real-time order updates |
 
 ## Message Queues
 
@@ -184,6 +196,7 @@ The service uses environment variables for configuration. Key settings include:
 - `MONGODB_URI`: MongoDB connection string
 - `RABBITMQ_HOST`, `RABBITMQ_PORT`: RabbitMQ connection details
 - `RABBITMQ_USERNAME`, `RABBITMQ_PASSWORD`: RabbitMQ credentials
+- `JAVA_OPTS`: JVM options for Docker deployment (e.g., `-Xmx512m -Xms256m`)
 
 ## Example API Usage
 
@@ -235,10 +248,11 @@ curl -N http://localhost:8000/sse/order/ORDER123
 ## Notes
 
 - The orchestrator coordinates with multiple adapter services (CMS, WMS, ROS) via RabbitMQ messaging
-- Docker setup includes separate containers for RabbitMQ and the orchestrator service for better isolation
+- Docker setup uses a multi-stage build for optimized image size with Alpine Linux base
 - MongoDB is used for persistent storage of orders, events, customers, drivers, and routes
 - Server-Sent Events (SSE) provide real-time updates to connected clients
 - The service runs on port 8000 by default
 - RabbitMQ management UI is available on port 15672 (guest/guest)
 - Authentication is implemented for both customers and drivers with mock functionality
 - Complete audit trail is maintained for all order events and state changes
+- Maven Wrapper (`mvnw`/`mvnw.cmd`) eliminates the need for a local Maven installation
