@@ -43,6 +43,7 @@ public class Order {
     private LocalDateTime updatedAt;
 
     private String driverId;
+    private String vehicleId;
 
     private String routeId;
     

@@ -73,7 +73,8 @@ public class RouteSubscriber {
         Route route = routeService.createOrderRoute(
                 routeUpdate.getOrderId(),
                 routeUpdate.getWaypoints(),
-                routeUpdate.getDriverId()
+                routeUpdate.getDriverId(),
+                routeUpdate.getVehicleId()
         );
 
         // Log success event

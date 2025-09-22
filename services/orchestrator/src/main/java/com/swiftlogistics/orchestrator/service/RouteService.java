@@ -26,7 +26,7 @@ public class RouteService {
   private final EventService eventService;
 
 
-  public Route createOrderRoute(String orderId, List<String> waypoints, String driverId) {
+  public Route createOrderRoute(String orderId, List<String> waypoints, String driverId, String vehicleId) {
     try {
       Optional<Order> order = orderRepository.findById(orderId);
       if (order.isEmpty()) {
@@ -42,6 +42,7 @@ public class RouteService {
         Order updatedOrder = order.get();
         updatedOrder.setRouteId(newRoute.getRouteId());
         updatedOrder.setDriverId(driverId);
+        updatedOrder.setVehicleId(vehicleId);
         updatedOrder.setStatus(OrderStatus.ROUTED);
         updatedOrder.setRoutedAt(LocalDateTime.now());
         orderRepository.save(updatedOrder);
