@@ -48,7 +48,11 @@ const MainDriverApp = () => {
 
   const handleRefresh = () => {
     // Simulate refresh
-    alert('Deliveries refreshed!');
+    if (driver?.driverId) {
+      getAssignedOrders(driver.driverId)
+        .then(data => setDeliveries(data || []))
+        .catch(() => setDeliveries([]));
+    }
   };
 
   // Use driver details from auth context if available

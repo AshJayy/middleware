@@ -28,7 +28,7 @@ public class DriverController {
         return ResponseEntity.ok(orders);
     }
 
-    @GetMapping("/driver/{orderId}")
+    @GetMapping("/orders/{orderId}")
     public ResponseEntity<DriverUpdateMessage> getOrder(@PathVariable String orderId) {
         DriverUpdateMessage order = driverService.getOrderDetails(orderId);
         return ResponseEntity.ok(order);
